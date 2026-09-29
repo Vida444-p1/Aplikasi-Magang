@@ -1,0 +1,42 @@
+name: aplikasi_magang
+description: "Aplikasi Magang terintegrasi - Pencarian Lowongan, Pendaftaran Peserta, dan Monitoring Kegiatan"
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.3.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  
+  # Supabase & Backend
+  supabase_flutter: ^2.8.0
+  http: ^1.2.1
+
+  # State Management
+  flutter_riverpod: ^2.5.1
+
+  # Routing
+  go_router: ^14.2.0
+
+  # UI & Styling
+  google_fonts: ^6.2.1
+  intl: ^0.19.0
+  fl_chart: ^0.68.0
+
+  # Utilities & Helpers
+  file_picker: ^8.0.5
+  flutter_dotenv: ^5.1.0
+  lucide_icons_flutter: ^3.1.20
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+
+flutter:
+  uses-material-design: true
+  assets:
+    - .env
+    - assets/images/

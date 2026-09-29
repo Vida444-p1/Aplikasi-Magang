@@ -1,0 +1,1 @@
+ C:\\FSD\\Aplikasi\ Magang\\build\\web\\manifest.json:  C:\\FSD\\Aplikasi\ Magang\\web\\index.html C:\\FSD\\Aplikasi\ Magang\\web\\manifest.json

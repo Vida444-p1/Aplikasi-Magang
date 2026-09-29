@@ -1,0 +1,11 @@
+{
+  "name": "Aplikasi Magang",
+  "short_name": "MagangApp",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#0F172A",
+  "theme_color": "#4F46E5",
+  "description": "Platform Pencarian Lowongan, Pendaftaran, dan Monitoring Magang",
+  "orientation": "portrait-primary",
+  "prefer_related_applications": false
+}
