@@ -3,12 +3,25 @@
 -- Techstack: Supabase (PostgreSQL), Edge Functions, Flutter Client
 -- ==============================================================================
 
--- 1. ENUMS
-CREATE TYPE user_role AS ENUM ('peserta', 'perusahaan', 'admin');
-CREATE TYPE sistem_kerja AS ENUM ('wfo', 'wfh', 'hybrid');
-CREATE TYPE status_lowongan AS ENUM ('aktif', 'ditutup');
-CREATE TYPE status_pendaftaran AS ENUM ('menunggu', 'diproses', 'diterima', 'ditolak');
-CREATE TYPE status_kegiatan AS ENUM ('berjalan', 'selesai');
+-- 1. ENUMS (Idempotent: Cek keberadaan tipe sebelum create agar tidak error jika dijalankan ulang)
+DO $$ 
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'user_role') THEN
+        CREATE TYPE user_role AS ENUM ('peserta', 'perusahaan', 'admin');
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'sistem_kerja') THEN
+        CREATE TYPE sistem_kerja AS ENUM ('wfo', 'wfh', 'hybrid');
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'status_lowongan') THEN
+        CREATE TYPE status_lowongan AS ENUM ('aktif', 'ditutup');
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'status_pendaftaran') THEN
+        CREATE TYPE status_pendaftaran AS ENUM ('menunggu', 'diproses', 'diterima', 'ditolak');
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'status_kegiatan') THEN
+        CREATE TYPE status_kegiatan AS ENUM ('berjalan', 'selesai');
+    END IF;
+END $$;
 
 -- 2. TABEL PROFILES (Terkoneksi langsung dengan auth.users Supabase)
 CREATE TABLE IF NOT EXISTS public.profiles (
@@ -130,34 +143,42 @@ RETURNS user_role AS $$
     SELECT role FROM public.profiles WHERE id = auth.uid();
 $$ LANGUAGE sql SECURITY DEFINER STABLE;
 
--- Profiles: Siapapun terautentikasi dapat membaca profile, pemilik dan admin dapat mengedit
+-- Profiles Policies
+DROP POLICY IF EXISTS "Profiles readable by authenticated users" ON public.profiles;
 CREATE POLICY "Profiles readable by authenticated users"
 ON public.profiles FOR SELECT TO authenticated USING (true);
 
+DROP POLICY IF EXISTS "Profiles update by owner or admin" ON public.profiles;
 CREATE POLICY "Profiles update by owner or admin"
 ON public.profiles FOR UPDATE TO authenticated
 USING (auth.uid() = id OR public.get_my_role() = 'admin');
 
--- Peserta Details:
+-- Peserta Details Policies
+DROP POLICY IF EXISTS "Peserta details readable by authenticated" ON public.peserta_details;
 CREATE POLICY "Peserta details readable by authenticated"
 ON public.peserta_details FOR SELECT TO authenticated USING (true);
 
+DROP POLICY IF EXISTS "Peserta details update by owner or admin" ON public.peserta_details;
 CREATE POLICY "Peserta details update by owner or admin"
 ON public.peserta_details FOR ALL TO authenticated
 USING (user_id = auth.uid() OR public.get_my_role() = 'admin');
 
--- Perusahaan Details:
+-- Perusahaan Details Policies
+DROP POLICY IF EXISTS "Perusahaan details readable by authenticated" ON public.perusahaan_details;
 CREATE POLICY "Perusahaan details readable by authenticated"
 ON public.perusahaan_details FOR SELECT TO authenticated USING (true);
 
+DROP POLICY IF EXISTS "Perusahaan details manage by owner or admin" ON public.perusahaan_details;
 CREATE POLICY "Perusahaan details manage by owner or admin"
 ON public.perusahaan_details FOR ALL TO authenticated
 USING (user_id = auth.uid() OR public.get_my_role() = 'admin');
 
--- Lowongan:
+-- Lowongan Policies
+DROP POLICY IF EXISTS "Lowongan viewable by authenticated" ON public.lowongan;
 CREATE POLICY "Lowongan viewable by authenticated"
 ON public.lowongan FOR SELECT TO authenticated USING (true);
 
+DROP POLICY IF EXISTS "Lowongan manageable by company owner or admin" ON public.lowongan;
 CREATE POLICY "Lowongan manageable by company owner or admin"
 ON public.lowongan FOR ALL TO authenticated
 USING (
@@ -165,7 +186,8 @@ USING (
     OR public.get_my_role() = 'admin'
 );
 
--- Pendaftaran:
+-- Pendaftaran Policies
+DROP POLICY IF EXISTS "Pendaftaran viewable by participant, company, or admin" ON public.pendaftaran;
 CREATE POLICY "Pendaftaran viewable by participant, company, or admin"
 ON public.pendaftaran FOR SELECT TO authenticated
 USING (
@@ -178,12 +200,14 @@ USING (
     OR public.get_my_role() = 'admin'
 );
 
+DROP POLICY IF EXISTS "Pendaftaran insertable by peserta" ON public.pendaftaran;
 CREATE POLICY "Pendaftaran insertable by peserta"
 ON public.pendaftaran FOR INSERT TO authenticated
 WITH CHECK (
     peserta_id IN (SELECT id FROM public.peserta_details WHERE user_id = auth.uid())
 );
 
+DROP POLICY IF EXISTS "Pendaftaran status update by company or admin" ON public.pendaftaran;
 CREATE POLICY "Pendaftaran status update by company or admin"
 ON public.pendaftaran FOR UPDATE TO authenticated
 USING (
@@ -195,7 +219,8 @@ USING (
     OR public.get_my_role() = 'admin'
 );
 
--- Kegiatan Magang:
+-- Kegiatan Magang Policies
+DROP POLICY IF EXISTS "Kegiatan viewable by peserta, mentor company, or admin" ON public.kegiatan_magang;
 CREATE POLICY "Kegiatan viewable by peserta, mentor company, or admin"
 ON public.kegiatan_magang FOR SELECT TO authenticated
 USING (
@@ -208,6 +233,7 @@ USING (
     OR public.get_my_role() = 'admin'
 );
 
+DROP POLICY IF EXISTS "Kegiatan manageable by peserta" ON public.kegiatan_magang;
 CREATE POLICY "Kegiatan manageable by peserta"
 ON public.kegiatan_magang FOR ALL TO authenticated
 USING (
@@ -215,7 +241,8 @@ USING (
     OR public.get_my_role() = 'admin'
 );
 
--- Notifikasi:
+-- Notifikasi Policies
+DROP POLICY IF EXISTS "Notifikasi manageable by receiver" ON public.notifikasi;
 CREATE POLICY "Notifikasi manageable by receiver"
 ON public.notifikasi FOR ALL TO authenticated
 USING (user_id = auth.uid());
@@ -224,25 +251,50 @@ USING (user_id = auth.uid());
 -- 10. TRIGGER AUTO-CREATE PROFILE ON AUTH.USER SIGNUP
 -- ==============================================================================
 CREATE OR REPLACE FUNCTION public.handle_new_user()
-RETURNS trigger AS $$
+RETURNS trigger 
+LANGUAGE plpgsql 
+SECURITY DEFINER
+SET search_path = public, auth
+AS $$
 DECLARE
-    assigned_role user_role;
+    assigned_role user_role := 'peserta';
     user_name TEXT;
+    raw_role TEXT;
 BEGIN
-    assigned_role := COALESCE((new.raw_user_meta_data->>'role')::user_role, 'peserta');
-    user_name := COALESCE(new.raw_user_meta_data->>'nama_lengkap', split_part(new.email, '@', 1));
-
-    INSERT INTO public.profiles (id, email, nama_lengkap, role)
-    VALUES (new.id, new.email, user_name, assigned_role);
-
-    IF assigned_role = 'peserta' THEN
-        INSERT INTO public.peserta_details (user_id) VALUES (new.id);
-    ELSIF assigned_role = 'perusahaan' THEN
-        INSERT INTO public.perusahaan_details (user_id, nama_perusahaan) 
-        VALUES (new.id, COALESCE(new.raw_user_meta_data->>'nama_perusahaan', user_name));
+    -- Validasi role secara aman dari raw_user_meta_data
+    raw_role := LOWER(COALESCE(new.raw_user_meta_data->>'role', 'peserta'));
+    IF raw_role IN ('peserta', 'perusahaan', 'admin') THEN
+        assigned_role := raw_role::user_role;
+    ELSE
+        assigned_role := 'peserta';
     END IF;
 
-    -- Kirim notifikasi selamat datang
+    -- Ambil nama lengkap atau fallback ke username dari email
+    user_name := COALESCE(
+        new.raw_user_meta_data->>'nama_lengkap', 
+        split_part(COALESCE(new.email, 'user'), '@', 1)
+    );
+
+    -- 1. Insert ke public.profiles
+    INSERT INTO public.profiles (id, email, nama_lengkap, role)
+    VALUES (new.id, COALESCE(new.email, ''), user_name, assigned_role)
+    ON CONFLICT (id) DO UPDATE SET
+        email = EXCLUDED.email,
+        nama_lengkap = EXCLUDED.nama_lengkap,
+        role = EXCLUDED.role;
+
+    -- 2. Insert ke detail profil sesuai role
+    IF assigned_role = 'peserta' THEN
+        INSERT INTO public.peserta_details (user_id) 
+        VALUES (new.id)
+        ON CONFLICT (user_id) DO NOTHING;
+    ELSIF assigned_role = 'perusahaan' THEN
+        INSERT INTO public.perusahaan_details (user_id, nama_perusahaan) 
+        VALUES (new.id, COALESCE(new.raw_user_meta_data->>'nama_perusahaan', user_name))
+        ON CONFLICT (user_id) DO NOTHING;
+    END IF;
+
+    -- 3. Kirim notifikasi sambutan
     INSERT INTO public.notifikasi (user_id, judul, pesan, tipe)
     VALUES (
         new.id,
@@ -252,8 +304,13 @@ BEGIN
     );
 
     RETURN new;
+EXCEPTION
+    WHEN OTHERS THEN
+        -- Catat pesan error di server log Supabase agar tidak menggagalkan proses signup user
+        RAISE WARNING 'Error pada handle_new_user trigger: %', SQLERRM;
+        RETURN new;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$;
 
 -- Pasang trigger pada auth.users
 DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
