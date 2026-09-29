@@ -3,7 +3,7 @@
 =======
 # 🚀 Aplikasi Magang (Prototipe Terpadu)
 
-**Versi:** 1.0 (Berdasarkan PRD v1.0)  
+**Versi:** 1.0  
 **Techstack Utama:** 
 - **Frontend / Client:** Flutter (Web & Multiplatform)
 - **Backend & Database:** Supabase (PostgreSQL, Supabase Auth, Row Level Security, Storage Buckets)
