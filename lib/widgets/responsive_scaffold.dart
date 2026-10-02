@@ -50,9 +50,11 @@ class ResponsiveScaffold extends ConsumerWidget {
           children: [
             Text(
               title,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
               style: TextStyle(
                 color: AppTheme.text(context),
-                fontSize: 17,
+                fontSize: isDesktop ? 17 : 15.5,
                 fontWeight: FontWeight.w800,
                 letterSpacing: -0.3,
               ),

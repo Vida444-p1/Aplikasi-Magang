@@ -23,17 +23,19 @@ class PesertaDashboardScreen extends ConsumerWidget {
     final summaryAsync = ref.watch(logbookSummaryProvider(pesertaId));
     final applicationsAsync = ref.watch(myApplicationsProvider(pesertaId));
 
+    final isMobile = MediaQuery.of(context).size.width < 700;
+
     return ResponsiveScaffold(
       title: 'Dashboard Peserta',
       currentRoute: '/peserta/dashboard',
       body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+        padding: EdgeInsets.symmetric(horizontal: isMobile ? 16 : 24, vertical: isMobile ? 16 : 24),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Welcome Hero Banner Card
             Container(
-              padding: const EdgeInsets.all(28),
+              padding: EdgeInsets.all(isMobile ? 18 : 28),
               decoration: BoxDecoration(
                 gradient: AppTheme.heroGradient,
                 borderRadius: BorderRadius.circular(20),
@@ -78,8 +80,8 @@ class PesertaDashboardScreen extends ConsumerWidget {
                         const SizedBox(height: 14),
                         Text(
                           'Halo, ${user?.namaLengkap ?? 'Peserta Magang'}! 👋',
-                          style: const TextStyle(
-                            fontSize: 24,
+                          style: TextStyle(
+                            fontSize: isMobile ? 20 : 24,
                             fontWeight: FontWeight.w800,
                             color: Colors.white,
                             letterSpacing: -0.4,
@@ -120,7 +122,7 @@ class PesertaDashboardScreen extends ConsumerWidget {
                 ],
               ),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 20),
 
             // Internship Summary Section
             summaryAsync.when(
@@ -141,14 +143,15 @@ class PesertaDashboardScreen extends ConsumerWidget {
                   children: [
                     LayoutBuilder(
                       builder: (context, constraints) {
-                        final isWide = constraints.maxWidth > 700;
+                        final isWide = constraints.maxWidth > 850;
+                        final isPhone = constraints.maxWidth < 600;
                         return GridView.count(
                           crossAxisCount: isWide ? 4 : 2,
                           shrinkWrap: true,
                           physics: const NeverScrollableScrollPhysics(),
-                          crossAxisSpacing: 16,
-                          mainAxisSpacing: 16,
-                          childAspectRatio: isWide ? 1.55 : 1.25,
+                          crossAxisSpacing: isPhone ? 12 : 16,
+                          mainAxisSpacing: isPhone ? 12 : 16,
+                          childAspectRatio: isWide ? 1.55 : (isPhone ? 1.08 : 1.35),
                           children: [
                             StatCard(
                               title: 'Progres Jam Kerja',
@@ -160,7 +163,7 @@ class PesertaDashboardScreen extends ConsumerWidget {
                             StatCard(
                               title: 'Kegiatan Dicatat',
                               value: '$totalLogs Log',
-                              subtitle: '${summary['kegiatan_selesai']} Selesai Divalidasi',
+                              subtitle: '${summary['kegiatan_selesai']} Selesai',
                               icon: LucideIcons.calendarCheck,
                               color: AppTheme.success,
                             ),
@@ -174,7 +177,7 @@ class PesertaDashboardScreen extends ConsumerWidget {
                             const StatCard(
                               title: 'Mitra Magang',
                               value: 'PT Teknologi',
-                              subtitle: 'Mobile App Developer',
+                              subtitle: 'App Developer',
                               icon: LucideIcons.building,
                               color: AppTheme.accent,
                             ),
@@ -186,7 +189,7 @@ class PesertaDashboardScreen extends ConsumerWidget {
 
                     // Progress Visual Bar Card
                     Container(
-                      padding: const EdgeInsets.all(20),
+                      padding: EdgeInsets.all(isMobile ? 16 : 20),
                       decoration: BoxDecoration(
                         color: AppTheme.surface(context),
                         borderRadius: BorderRadius.circular(16),
@@ -196,36 +199,70 @@ class PesertaDashboardScreen extends ConsumerWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'Penyelesaian Jam Magang (Standar Target 3 Bulan)',
-                                    style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14, color: AppTheme.text(context)),
-                                  ),
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    'Akumulasi durasi seluruh logbook yang telah dicatat dan disetujui',
-                                    style: TextStyle(fontSize: 12, color: AppTheme.mutedText(context)),
-                                  ),
-                                ],
-                              ),
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                                decoration: BoxDecoration(
-                                  color: AppTheme.primary.withValues(alpha: 0.1),
-                                  borderRadius: BorderRadius.circular(8),
+                          isMobile
+                              ? Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Text(
+                                          'Penyelesaian Jam Magang',
+                                          style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5, color: AppTheme.text(context)),
+                                        ),
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                          decoration: BoxDecoration(
+                                            color: AppTheme.primary.withValues(alpha: 0.1),
+                                            borderRadius: BorderRadius.circular(8),
+                                          ),
+                                          child: Text(
+                                            '$percent%',
+                                            style: const TextStyle(fontWeight: FontWeight.w700, color: AppTheme.primary, fontSize: 12),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      '$totalHours / $targetHours Jam Magang',
+                                      style: TextStyle(fontSize: 11.5, color: AppTheme.mutedText(context)),
+                                    ),
+                                  ],
+                                )
+                              : Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            'Penyelesaian Jam Magang (Standar Target 3 Bulan)',
+                                            style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14, color: AppTheme.text(context)),
+                                          ),
+                                          const SizedBox(height: 2),
+                                          Text(
+                                            'Akumulasi durasi seluruh logbook yang telah dicatat dan disetujui',
+                                            style: TextStyle(fontSize: 12, color: AppTheme.mutedText(context)),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                      decoration: BoxDecoration(
+                                        color: AppTheme.primary.withValues(alpha: 0.1),
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      child: Text(
+                                        '$percent% ($totalHours / $targetHours Jam)',
+                                        style: const TextStyle(fontWeight: FontWeight.w700, color: AppTheme.primary, fontSize: 12.5),
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                                child: Text(
-                                  '$percent% ($totalHours / $targetHours Jam)',
-                                  style: const TextStyle(fontWeight: FontWeight.w700, color: AppTheme.primary, fontSize: 12.5),
-                                ),
-                              ),
-                            ],
-                          ),
                           const SizedBox(height: 14),
                           ClipRRect(
                             borderRadius: BorderRadius.circular(10),
@@ -250,185 +287,195 @@ class PesertaDashboardScreen extends ConsumerWidget {
             // Two-column layout for Recent Activities & Active Applications
             LayoutBuilder(
               builder: (context, constraints) {
-                final isWide = constraints.maxWidth > 800;
-                return Flex(
-                  direction: isWide ? Axis.horizontal : Axis.vertical,
+                final isWide = constraints.maxWidth > 850;
+
+                Widget buildActivitiesCard() {
+                  return Container(
+                    padding: EdgeInsets.all(isMobile ? 16 : 22),
+                    decoration: BoxDecoration(
+                      color: AppTheme.surface(context),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: AppTheme.border(context), width: 1.1),
+                      boxShadow: AppTheme.getCardShadow(context),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'Kegiatan Magang Terbaru',
+                              style: TextStyle(fontSize: 15.5, fontWeight: FontWeight.w800, color: AppTheme.text(context)),
+                            ),
+                            TextButton.icon(
+                              onPressed: () => context.go('/peserta/kegiatan'),
+                              icon: const Icon(LucideIcons.arrowRight, size: 14),
+                              label: const Text('Buka Logbook', style: TextStyle(fontSize: 12.5)),
+                            ),
+                          ],
+                        ),
+                        Divider(color: AppTheme.borderSubtleColor(context), height: 16),
+                        summaryAsync.when(
+                          loading: () => const Center(child: CircularProgressIndicator()),
+                          error: (_, __) => const SizedBox(),
+                          data: (summary) {
+                            final activities = (summary['kegiatan_terbaru'] as List? ?? []);
+                            if (activities.isEmpty) {
+                              return Padding(
+                                padding: const EdgeInsets.all(24),
+                                child: Center(
+                                  child: Text('Belum ada logbook yang dicatat.', style: TextStyle(color: AppTheme.mutedText(context))),
+                                ),
+                              );
+                            }
+                            return ListView.separated(
+                              shrinkWrap: true,
+                              physics: const NeverScrollableScrollPhysics(),
+                              itemCount: activities.length,
+                              separatorBuilder: (_, __) => Divider(color: AppTheme.borderSubtleColor(context), height: 1),
+                              itemBuilder: (context, idx) {
+                                final act = activities[idx];
+                                return Padding(
+                                  padding: const EdgeInsets.symmetric(vertical: 10),
+                                  child: Row(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Container(
+                                        padding: const EdgeInsets.all(8),
+                                        decoration: BoxDecoration(
+                                          color: AppTheme.primaryLight.withValues(alpha: 0.1),
+                                          borderRadius: BorderRadius.circular(10),
+                                        ),
+                                        child: const Icon(LucideIcons.fileText, color: AppTheme.primary, size: 17),
+                                      ),
+                                      const SizedBox(width: 12),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              act.judulKegiatan,
+                                              style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5, color: AppTheme.text(context)),
+                                            ),
+                                            const SizedBox(height: 2),
+                                            Text(
+                                              '${DateFormat('dd MMM yyyy').format(act.tanggal)} • ${act.durasiJam} Jam',
+                                              style: TextStyle(fontSize: 12, color: AppTheme.mutedText(context)),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                      StatusBadge(status: act.statusKegiatan),
+                                    ],
+                                  ),
+                                );
+                              },
+                            );
+                          },
+                        ),
+                      ],
+                    ),
+                  );
+                }
+
+                Widget buildApplicationsCard() {
+                  return Container(
+                    padding: EdgeInsets.all(isMobile ? 16 : 22),
+                    decoration: BoxDecoration(
+                      color: AppTheme.surface(context),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: AppTheme.border(context), width: 1.1),
+                      boxShadow: AppTheme.getCardShadow(context),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'Status Lamaran',
+                              style: TextStyle(fontSize: 15.5, fontWeight: FontWeight.w800, color: AppTheme.text(context)),
+                            ),
+                            TextButton.icon(
+                              onPressed: () => context.go('/peserta/pendaftaran'),
+                              icon: const Icon(LucideIcons.arrowRight, size: 14),
+                              label: const Text('Detail', style: TextStyle(fontSize: 12.5)),
+                            ),
+                          ],
+                        ),
+                        Divider(color: AppTheme.borderSubtleColor(context), height: 16),
+                        applicationsAsync.when(
+                          loading: () => const Center(child: CircularProgressIndicator()),
+                          error: (_, __) => const SizedBox(),
+                          data: (apps) {
+                            if (apps.isEmpty) {
+                              return Padding(
+                                padding: const EdgeInsets.all(16),
+                                child: Center(
+                                  child: Text('Belum ada lamaran magang.', style: TextStyle(color: AppTheme.mutedText(context))),
+                                ),
+                              );
+                            }
+                            return ListView.separated(
+                              shrinkWrap: true,
+                              physics: const NeverScrollableScrollPhysics(),
+                              itemCount: apps.take(3).length,
+                              separatorBuilder: (_, __) => Divider(color: AppTheme.borderSubtleColor(context), height: 1),
+                              itemBuilder: (context, index) {
+                                final app = apps[index];
+                                return Padding(
+                                  padding: const EdgeInsets.symmetric(vertical: 10),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Row(
+                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          Expanded(
+                                            child: Text(
+                                              app.vacancy?.posisi ?? 'Posisi Magang',
+                                              style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5, color: AppTheme.text(context)),
+                                            ),
+                                          ),
+                                          StatusBadge(status: app.status),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 3),
+                                      Text(
+                                        app.vacancy?.namaPerusahaan ?? 'Perusahaan Mitra',
+                                        style: TextStyle(fontSize: 12, color: AppTheme.mutedText(context)),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              },
+                            );
+                          },
+                        ),
+                      ],
+                    ),
+                  );
+                }
+
+                if (!isWide) {
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      buildActivitiesCard(),
+                      const SizedBox(height: 20),
+                      buildApplicationsCard(),
+                    ],
+                  );
+                }
+
+                return Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Recent Activities
-                    Expanded(
-                      flex: isWide ? 6 : 0,
-                      child: Container(
-                        padding: const EdgeInsets.all(22),
-                        decoration: BoxDecoration(
-                          color: AppTheme.surface(context),
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: AppTheme.border(context), width: 1.1),
-                          boxShadow: AppTheme.getCardShadow(context),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Text(
-                                  'Kegiatan Magang Terbaru',
-                                  style: TextStyle(fontSize: 15.5, fontWeight: FontWeight.w800, color: AppTheme.text(context)),
-                                ),
-                                TextButton.icon(
-                                  onPressed: () => context.go('/peserta/kegiatan'),
-                                  icon: const Icon(LucideIcons.arrowRight, size: 14),
-                                  label: const Text('Buka Logbook', style: TextStyle(fontSize: 12.5)),
-                                ),
-                              ],
-                            ),
-                            Divider(color: AppTheme.borderSubtleColor(context), height: 16),
-                            summaryAsync.when(
-                              loading: () => const Center(child: CircularProgressIndicator()),
-                              error: (_, __) => const SizedBox(),
-                              data: (summary) {
-                                final activities = (summary['kegiatan_terbaru'] as List? ?? []);
-                                if (activities.isEmpty) {
-                                  return Padding(
-                                    padding: const EdgeInsets.all(24),
-                                    child: Center(
-                                      child: Text('Belum ada logbook yang dicatat.', style: TextStyle(color: AppTheme.mutedText(context))),
-                                    ),
-                                  );
-                                }
-                                return ListView.separated(
-                                  shrinkWrap: true,
-                                  physics: const NeverScrollableScrollPhysics(),
-                                  itemCount: activities.length,
-                                  separatorBuilder: (_, __) => Divider(color: AppTheme.borderSubtleColor(context), height: 1),
-                                  itemBuilder: (context, idx) {
-                                    final act = activities[idx];
-                                    return Padding(
-                                      padding: const EdgeInsets.symmetric(vertical: 10),
-                                      child: Row(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: [
-                                          Container(
-                                            padding: const EdgeInsets.all(8),
-                                            decoration: BoxDecoration(
-                                              color: AppTheme.primaryLight.withValues(alpha: 0.1),
-                                              borderRadius: BorderRadius.circular(10),
-                                            ),
-                                            child: const Icon(LucideIcons.fileText, color: AppTheme.primary, size: 17),
-                                          ),
-                                          const SizedBox(width: 12),
-                                          Expanded(
-                                            child: Column(
-                                              crossAxisAlignment: CrossAxisAlignment.start,
-                                              children: [
-                                                Text(
-                                                  act.judulKegiatan,
-                                                  style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5, color: AppTheme.text(context)),
-                                                ),
-                                                const SizedBox(height: 2),
-                                                Text(
-                                                  '${DateFormat('dd MMM yyyy').format(act.tanggal)} • ${act.durasiJam} Jam',
-                                                  style: TextStyle(fontSize: 12, color: AppTheme.mutedText(context)),
-                                                ),
-                                              ],
-                                            ),
-                                          ),
-                                          StatusBadge(status: act.statusKegiatan),
-                                        ],
-                                      ),
-                                    );
-                                  },
-                                );
-                              },
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    if (isWide) const SizedBox(width: 20) else const SizedBox(height: 20),
-
-                    // Active Applications Status
-                    Expanded(
-                      flex: isWide ? 4 : 0,
-                      child: Container(
-                        padding: const EdgeInsets.all(22),
-                        decoration: BoxDecoration(
-                          color: AppTheme.surface(context),
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: AppTheme.border(context), width: 1.1),
-                          boxShadow: AppTheme.getCardShadow(context),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Text(
-                                  'Status Lamaran',
-                                  style: TextStyle(fontSize: 15.5, fontWeight: FontWeight.w800, color: AppTheme.text(context)),
-                                ),
-                                TextButton.icon(
-                                  onPressed: () => context.go('/peserta/pendaftaran'),
-                                  icon: const Icon(LucideIcons.arrowRight, size: 14),
-                                  label: const Text('Detail', style: TextStyle(fontSize: 12.5)),
-                                ),
-                              ],
-                            ),
-                            Divider(color: AppTheme.borderSubtleColor(context), height: 16),
-                            applicationsAsync.when(
-                              loading: () => const Center(child: CircularProgressIndicator()),
-                              error: (_, __) => const SizedBox(),
-                              data: (apps) {
-                                if (apps.isEmpty) {
-                                  return Padding(
-                                    padding: const EdgeInsets.all(16),
-                                    child: Center(
-                                      child: Text('Belum ada lamaran magang.', style: TextStyle(color: AppTheme.mutedText(context))),
-                                    ),
-                                  );
-                                }
-                                return ListView.separated(
-                                  shrinkWrap: true,
-                                  physics: const NeverScrollableScrollPhysics(),
-                                  itemCount: apps.take(3).length,
-                                  separatorBuilder: (_, __) => Divider(color: AppTheme.borderSubtleColor(context), height: 1),
-                                  itemBuilder: (context, index) {
-                                    final app = apps[index];
-                                    return Padding(
-                                      padding: const EdgeInsets.symmetric(vertical: 10),
-                                      child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: [
-                                          Row(
-                                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                            children: [
-                                              Expanded(
-                                                child: Text(
-                                                  app.vacancy?.posisi ?? 'Posisi Magang',
-                                                  style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5, color: AppTheme.text(context)),
-                                                ),
-                                              ),
-                                              StatusBadge(status: app.status),
-                                            ],
-                                          ),
-                                          const SizedBox(height: 3),
-                                          Text(
-                                            app.vacancy?.namaPerusahaan ?? 'Perusahaan Mitra',
-                                            style: TextStyle(fontSize: 12, color: AppTheme.mutedText(context)),
-                                          ),
-                                        ],
-                                      ),
-                                    );
-                                  },
-                                );
-                              },
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
+                    Expanded(flex: 6, child: buildActivitiesCard()),
+                    const SizedBox(width: 20),
+                    Expanded(flex: 4, child: buildApplicationsCard()),
                   ],
                 );
               },

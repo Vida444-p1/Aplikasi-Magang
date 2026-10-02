@@ -11,18 +11,20 @@ class AdminDashboardScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final isMobile = MediaQuery.of(context).size.width < 700;
+
     return ResponsiveScaffold(
       title: 'Dashboard Admin & Koordinator Magang',
       currentRoute: '/admin/dashboard',
       body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 24),
+        padding: EdgeInsets.symmetric(horizontal: isMobile ? 16 : 28, vertical: isMobile ? 16 : 24),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Admin Banner Header
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.all(28),
+              padding: EdgeInsets.all(isMobile ? 18 : 28),
               decoration: BoxDecoration(
                 gradient: AppTheme.heroGradient,
                 borderRadius: BorderRadius.circular(20),
@@ -60,10 +62,10 @@ class AdminDashboardScreen extends ConsumerWidget {
                           ),
                         ),
                         const SizedBox(height: 12),
-                        const Text(
+                        Text(
                           'Pusat Kendali Koordinator Magang',
                           style: TextStyle(
-                            fontSize: 24,
+                            fontSize: isMobile ? 20 : 24,
                             fontWeight: FontWeight.w800,
                             letterSpacing: -0.5,
                             color: Colors.white,
@@ -80,23 +82,24 @@ class AdminDashboardScreen extends ConsumerWidget {
                 ],
               ),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 20),
 
             // Statistics Grid (PRD 5.H Admin)
             LayoutBuilder(
               builder: (context, constraints) {
-                final isWide = constraints.maxWidth > 700;
+                final isWide = constraints.maxWidth > 850;
+                final isPhone = constraints.maxWidth < 600;
                 return GridView.count(
                   crossAxisCount: isWide ? 3 : 2,
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
-                  crossAxisSpacing: 16,
-                  mainAxisSpacing: 16,
-                  childAspectRatio: isWide ? 1.8 : 1.3,
+                  crossAxisSpacing: isPhone ? 12 : 16,
+                  mainAxisSpacing: isPhone ? 12 : 16,
+                  childAspectRatio: isWide ? 1.8 : (isPhone ? 1.08 : 1.35),
                   children: const [
                     StatCard(
-                      title: 'Total Mahasiswa Peserta',
-                      value: '142 Mahasiswa',
+                      title: 'Total Mahasiswa',
+                      value: '142 Org',
                       subtitle: '89 Aktif Magang',
                       icon: LucideIcons.graduationCap,
                       color: AppTheme.primary,
@@ -110,7 +113,7 @@ class AdminDashboardScreen extends ConsumerWidget {
                     ),
                     StatCard(
                       title: 'Lowongan Tersedia',
-                      value: '38 Lowongan',
+                      value: '38 Posisi',
                       subtitle: '75 Kuota Terbuka',
                       icon: LucideIcons.briefcase,
                       color: AppTheme.accent,
@@ -118,21 +121,21 @@ class AdminDashboardScreen extends ConsumerWidget {
                     StatCard(
                       title: 'Total Pendaftaran',
                       value: '215 Berkas',
-                      subtitle: '62 Selesai Diproses',
+                      subtitle: '62 Diproses',
                       icon: LucideIcons.fileText,
                       color: AppTheme.warning,
                     ),
                     StatCard(
                       title: 'Peserta Diterima',
                       value: '68 Peserta',
-                      subtitle: 'Tingkat Penerimaan 48%',
+                      subtitle: 'Diterima 48%',
                       icon: LucideIcons.userCheck,
                       color: AppTheme.success,
                     ),
                     StatCard(
-                      title: 'Logbook Harian Masuk',
+                      title: 'Logbook Masuk',
                       value: '520 Log',
-                      subtitle: '94% On-Track Sesuai SKS',
+                      subtitle: '94% On-Track',
                       icon: LucideIcons.calendarCheck,
                       color: AppTheme.danger,
                     ),
@@ -144,7 +147,7 @@ class AdminDashboardScreen extends ConsumerWidget {
 
             // Admin Quick Actions & Monitoring Shortcuts
             Container(
-              padding: const EdgeInsets.all(24),
+              padding: EdgeInsets.all(isMobile ? 16 : 24),
               decoration: BoxDecoration(
                 color: AppTheme.surface(context),
                 borderRadius: BorderRadius.circular(20),
@@ -180,6 +183,7 @@ class AdminDashboardScreen extends ConsumerWidget {
                         LucideIcons.users,
                         '/admin/users',
                         AppTheme.primary,
+                        isMobile,
                       ),
                       _adminShortcut(
                         context,
@@ -188,6 +192,7 @@ class AdminDashboardScreen extends ConsumerWidget {
                         LucideIcons.briefcase,
                         '/admin/lowongan',
                         AppTheme.info,
+                        isMobile,
                       ),
                       _adminShortcut(
                         context,
@@ -196,6 +201,7 @@ class AdminDashboardScreen extends ConsumerWidget {
                         LucideIcons.clipboardList,
                         '/admin/monitoring',
                         AppTheme.success,
+                        isMobile,
                       ),
                     ],
                   ),
@@ -208,13 +214,13 @@ class AdminDashboardScreen extends ConsumerWidget {
     );
   }
 
-  Widget _adminShortcut(BuildContext context, String title, String desc, IconData icon, String route, Color accentColor) {
+  Widget _adminShortcut(BuildContext context, String title, String desc, IconData icon, String route, Color accentColor, bool isMobile) {
     return InkWell(
       onTap: () => context.go(route),
       borderRadius: BorderRadius.circular(14),
       child: Container(
-        width: 250,
-        padding: const EdgeInsets.all(18),
+        width: isMobile ? double.infinity : 250,
+        padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: AppTheme.surfaceElevated(context),
           borderRadius: BorderRadius.circular(14),

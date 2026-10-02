@@ -160,12 +160,13 @@ class VacancyListScreen extends ConsumerWidget {
                     LayoutBuilder(
                       builder: (context, constraints) {
                         final isDesktop = constraints.maxWidth >= 900;
+                        final isMobile = constraints.maxWidth < 600;
                         return GridView.builder(
                           shrinkWrap: true,
                           physics: const NeverScrollableScrollPhysics(),
                           gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                             crossAxisCount: isDesktop ? 2 : 1,
-                            childAspectRatio: isDesktop ? 1.75 : 1.4,
+                            childAspectRatio: isDesktop ? 1.75 : (isMobile ? 1.18 : 1.4),
                             crossAxisSpacing: 16,
                             mainAxisSpacing: 16,
                           ),
@@ -177,7 +178,7 @@ class VacancyListScreen extends ConsumerWidget {
                                 : 'P';
 
                             return Container(
-                              padding: const EdgeInsets.all(22),
+                              padding: EdgeInsets.all(isMobile ? 16 : 22),
                               decoration: BoxDecoration(
                                 color: AppTheme.surface(context),
                                 borderRadius: BorderRadius.circular(16),

@@ -20,6 +20,8 @@ class StatCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = AppTheme.isDark(context);
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isSmall = screenWidth < 600;
 
     return Container(
       decoration: BoxDecoration(
@@ -28,25 +30,31 @@ class StatCard extends StatelessWidget {
         border: Border.all(color: AppTheme.border(context), width: 1.1),
         boxShadow: AppTheme.getCardShadow(context),
       ),
-      padding: const EdgeInsets.all(20),
+      padding: EdgeInsets.all(isSmall ? 13 : 18),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                title,
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: AppTheme.mutedText(context),
-                  letterSpacing: 0.2,
+              Expanded(
+                child: Text(
+                  title,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: isSmall ? 12 : 13,
+                    fontWeight: FontWeight.w600,
+                    color: AppTheme.mutedText(context),
+                    letterSpacing: 0.1,
+                    height: 1.2,
+                  ),
                 ),
               ),
+              const SizedBox(width: 6),
               Container(
-                padding: const EdgeInsets.all(9),
+                padding: EdgeInsets.all(isSmall ? 7 : 8),
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: [
@@ -59,27 +67,32 @@ class StatCard extends StatelessWidget {
                   borderRadius: BorderRadius.circular(10),
                   border: Border.all(color: color.withValues(alpha: 0.25), width: 1),
                 ),
-                child: Icon(icon, color: color, size: 20),
+                child: Icon(icon, color: color, size: isSmall ? 16 : 19),
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 6),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
             children: [
-              Text(
-                value,
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.w800,
-                  color: AppTheme.text(context),
-                  letterSpacing: -0.5,
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  value,
+                  style: TextStyle(
+                    fontSize: isSmall ? 19 : 23,
+                    fontWeight: FontWeight.w800,
+                    color: AppTheme.text(context),
+                    letterSpacing: -0.5,
+                  ),
                 ),
               ),
               if (subtitle != null) ...[
-                const SizedBox(height: 6),
+                const SizedBox(height: 4),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2.5),
                   decoration: BoxDecoration(
                     color: color.withValues(alpha: isDark ? 0.15 : 0.08),
                     borderRadius: BorderRadius.circular(6),
@@ -87,10 +100,12 @@ class StatCard extends StatelessWidget {
                   ),
                   child: Text(
                     subtitle!,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: TextStyle(
-                      fontSize: 11.5,
+                      fontSize: isSmall ? 10.5 : 11.5,
                       fontWeight: FontWeight.w600,
-                      color: isDark ? color : color,
+                      color: color,
                     ),
                   ),
                 ),
