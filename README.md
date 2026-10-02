@@ -1,6 +1,3 @@
-<<<<<<< HEAD
-# Aplikasi-Magang
-=======
 # 🚀 Aplikasi Magang (Prototipe Terpadu)
 
 **Versi:** 1.0  
@@ -122,4 +119,3 @@ flutter run -d chrome
 
 Untuk memudahkan presentasi dan evaluasi pengujian tanpa perlu repot logout-login berulang kali, aplikasi dilengkapi **Peralihan Role Instan**:
 * Klik chip role **Peserta**, **Perusahaan**, atau **Admin** di sidebar kiri atau halaman login untuk langsung merasakan perspektif dan fitur masing-masing pengguna secara real-time.
->>>>>>> 07b969e (Update)

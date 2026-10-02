@@ -1,7 +1,4 @@
-2026/09/29-14:04:58.979 5e9c Reusing MANIFEST C:\Users\vidar\AppData\Local\Temp\flutter_tools.bcf5dcda\flutter_tools_chrome_device.4f630f6f\Default\Site Characteristics Database/MANIFEST-000001
-2026/09/29-14:04:58.979 5e9c Recovering log #3
-2026/09/29-14:04:58.979 5e9c Level-0 table #6: started
-2026/09/29-14:04:58.983 5e9c Level-0 table #6: 315 bytes OK
-2026/09/29-14:04:58.983 5e9c Recovering log #6
-2026/09/29-14:04:58.984 5e9c Reusing old log C:\Users\vidar\AppData\Local\Temp\flutter_tools.bcf5dcda\flutter_tools_chrome_device.4f630f6f\Default\Site Characteristics Database/000006.log 
-2026/09/29-14:04:58.986 5e9c Delete type=0 #3
+2026/09/30-13:45:44.303 1914 Reusing MANIFEST C:\Users\vidar\AppData\Local\Temp\flutter_tools.c3f3f8be\flutter_tools_chrome_device.58786f4\Default\Site Characteristics Database/MANIFEST-000001
+2026/09/30-13:45:44.304 1914 Recovering log #6
+2026/09/30-13:45:44.305 1914 Reusing old log C:\Users\vidar\AppData\Local\Temp\flutter_tools.c3f3f8be\flutter_tools_chrome_device.58786f4\Default\Site Characteristics Database/000006.log 
+2026/09/30-13:45:44.305 1914 Delete type=0 #3
