@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/profile_model.dart';
 import '../services/auth_service.dart';
 
@@ -137,7 +138,11 @@ class AuthNotifier extends StateNotifier<AuthState> {
       await init();
       return true;
     } catch (e) {
-      state = state.copyWith(isLoading: false, errorMessage: e.toString());
+      String msg = e.toString();
+      if (e is AuthException) {
+        msg = e.message;
+      }
+      state = state.copyWith(isLoading: false, errorMessage: msg);
       return false;
     }
   }

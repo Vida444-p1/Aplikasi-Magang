@@ -24,25 +24,103 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   bool _isLoading = false;
 
   void _handleRegister() async {
+    final nama = _namaController.text.trim();
+    final email = _emailController.text.trim();
+    final password = _passwordController.text.trim();
+    final namaPerusahaan = _companyController.text.trim();
+
+    if (nama.isEmpty || email.isEmpty || password.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Mohon lengkapi semua kolom yang wajib diisi.'),
+          backgroundColor: AppTheme.danger,
+        ),
+      );
+      return;
+    }
+
+    if (password.length < 6) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Password minimal harus 6 karakter.'),
+          backgroundColor: AppTheme.danger,
+        ),
+      );
+      return;
+    }
+
+    if (_selectedRole == 'perusahaan' && namaPerusahaan.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Mohon masukkan nama perusahaan/instansi.'),
+          backgroundColor: AppTheme.danger,
+        ),
+      );
+      return;
+    }
+
     setState(() => _isLoading = true);
-    await Future.delayed(const Duration(milliseconds: 600));
 
-    ref.read(authProvider.notifier).switchDemoRole(_selectedRole);
+    try {
+      final authService = ref.read(authServiceProvider);
+      final res = await authService.register(
+        email: email,
+        password: password,
+        namaLengkap: nama,
+        role: _selectedRole,
+        namaPerusahaan: _selectedRole == 'perusahaan' ? namaPerusahaan : null,
+      );
 
-    setState(() => _isLoading = false);
-    if (!mounted) return;
+      // Jika session otomatis didapat (Email confirm OFF di Supabase)
+      if (res.session != null) {
+        await ref.read(authProvider.notifier).init();
+      } else {
+        // Upayakan login otomatis dengan kredensial yang baru didaftarkan
+        try {
+          await ref.read(authProvider.notifier).login(email, password);
+        } catch (_) {}
+      }
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Registrasi berhasil! Selamat datang di Aplikasi Magang.'),
-        backgroundColor: AppTheme.success,
-      ),
-    );
+      if (!mounted) return;
 
-    if (_selectedRole == 'peserta') {
-      context.go('/peserta/dashboard');
-    } else {
-      context.go('/perusahaan/dashboard');
+      final currentProfile = ref.read(authProvider).userProfile;
+      if (currentProfile != null && !currentProfile.id.contains('peserta-001')) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Registrasi & Login Berhasil! Selamat datang di Aplikasi Magang.'),
+            backgroundColor: AppTheme.success,
+          ),
+        );
+        if (_selectedRole == 'peserta') {
+          context.go('/peserta/dashboard');
+        } else if (_selectedRole == 'perusahaan') {
+          context.go('/perusahaan/dashboard');
+        } else {
+          context.go('/admin/dashboard');
+        }
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Registrasi berhasil di Supabase! Silakan login. (Jika gagal login, matikan opsi "Confirm email" di Supabase Dashboard).',
+            ),
+            backgroundColor: AppTheme.success,
+            duration: Duration(seconds: 5),
+          ),
+        );
+        context.go('/login');
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Registrasi gagal: $e'),
+          backgroundColor: AppTheme.danger,
+          duration: const Duration(seconds: 4),
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 

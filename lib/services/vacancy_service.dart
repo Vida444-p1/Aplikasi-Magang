@@ -129,14 +129,17 @@ class VacancyService {
           .select('*, perusahaan:perusahaan_id(nama_perusahaan, alamat)')
           .eq('perusahaan_id', perusahaanId)
           .order('created_at', ascending: false)
-          .timeout(const Duration(seconds: 2));
+          .timeout(const Duration(seconds: 4));
 
       final list = (res as List).map((e) => VacancyModel.fromJson(e)).toList();
-      if (list.isNotEmpty) return list;
+      return list;
     } catch (e) {
       debugPrint('getCompanyVacancies notice: $e');
     }
-    return List.from(_mockVacancies);
+    if (perusahaanId.contains('per-')) {
+      return List.from(_mockVacancies);
+    }
+    return [];
   }
 
   // Tambah lowongan baru (Cepat, aman, tidak akan stuck)

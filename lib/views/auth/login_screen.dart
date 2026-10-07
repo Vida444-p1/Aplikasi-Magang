@@ -21,21 +21,77 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   bool _isLoading = false;
 
   void _handleLogin() async {
-    setState(() => _isLoading = true);
     final email = _emailController.text.trim();
+    final password = _passwordController.text.trim();
 
-    // Default fast-track login untuk prototipe
-    if (email.contains('perusahaan') || email.contains('hrd')) {
-      ref.read(authProvider.notifier).switchDemoRole('perusahaan');
-      if (mounted) context.go('/perusahaan/dashboard');
-    } else if (email.contains('admin')) {
-      ref.read(authProvider.notifier).switchDemoRole('admin');
-      if (mounted) context.go('/admin/dashboard');
-    } else {
-      ref.read(authProvider.notifier).switchDemoRole('peserta');
-      if (mounted) context.go('/peserta/dashboard');
+    if (email.isEmpty || password.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Mohon masukkan email dan password.'),
+          backgroundColor: AppTheme.danger,
+        ),
+      );
+      return;
     }
-    setState(() => _isLoading = false);
+
+    setState(() => _isLoading = true);
+
+    // 1. Coba login ke Supabase Auth sesungguhnya
+    final success = await ref.read(authProvider.notifier).login(email, password);
+
+    if (success) {
+      if (!mounted) return;
+      final role = ref.read(authProvider).activeRole;
+      if (role == 'perusahaan') {
+        context.go('/perusahaan/dashboard');
+      } else if (role == 'admin') {
+        context.go('/admin/dashboard');
+      } else {
+        context.go('/peserta/dashboard');
+      }
+    } else {
+      if (!mounted) return;
+      final errorMsg = ref.read(authProvider).errorMessage ?? 'Login gagal.';
+
+      // Jika akun adalah akun contoh demo bawaan, berikan fallback otomatis
+      final isDemoAccount = email == 'vida.rizki@student.uii.ac.id' ||
+          email == 'hrd@nusantaradigital.co.id' ||
+          email == 'admin.magang@kampus.ac.id';
+
+      if (isDemoAccount) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Akun demo belum terdaftar di Supabase. Masuk melalui Mode Simulasi.'),
+            backgroundColor: AppTheme.warning,
+            duration: Duration(seconds: 2),
+          ),
+        );
+        if (email.contains('perusahaan') || email.contains('hrd')) {
+          ref.read(authProvider.notifier).switchDemoRole('perusahaan');
+          context.go('/perusahaan/dashboard');
+        } else if (email.contains('admin')) {
+          ref.read(authProvider.notifier).switchDemoRole('admin');
+          context.go('/admin/dashboard');
+        } else {
+          ref.read(authProvider.notifier).switchDemoRole('peserta');
+          context.go('/peserta/dashboard');
+        }
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              errorMsg.contains('Email not confirmed')
+                  ? 'Email belum dikonfirmasi di Supabase. Matikan opsi "Confirm email" di menu Authentication > Providers > Email pada Supabase Dashboard.'
+                  : 'Login gagal: $errorMsg',
+            ),
+            backgroundColor: AppTheme.danger,
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      }
+    }
+
+    if (mounted) setState(() => _isLoading = false);
   }
 
   @override

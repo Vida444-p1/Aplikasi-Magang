@@ -18,8 +18,43 @@ class AuthService {
           .eq('id', user.id)
           .maybeSingle();
 
-      if (res == null) return null;
-      return UserProfile.fromJson(res);
+      if (res != null) {
+        return UserProfile.fromJson(res);
+      }
+
+      // Jika profile belum terisi oleh trigger database, buat secara programatik
+      final meta = user.userMetadata ?? {};
+      final role = meta['role']?.toString().toLowerCase() ?? 'peserta';
+      final nama = meta['nama_lengkap']?.toString() ?? (user.email?.split('@').first ?? 'Pengguna');
+
+      await _client.from('profiles').upsert({
+        'id': user.id,
+        'email': user.email ?? '',
+        'nama_lengkap': nama,
+        'role': role,
+      });
+
+      if (role == 'peserta') {
+        await _client.from('peserta_details').upsert({
+          'user_id': user.id,
+        }, onConflict: 'user_id');
+      } else if (role == 'perusahaan') {
+        await _client.from('perusahaan_details').upsert({
+          'user_id': user.id,
+          'nama_perusahaan': meta['nama_perusahaan']?.toString() ?? nama,
+        }, onConflict: 'user_id');
+      }
+
+      final retryRes = await _client
+          .from('profiles')
+          .select('*, peserta_details(*), perusahaan_details(*)')
+          .eq('id', user.id)
+          .maybeSingle();
+
+      if (retryRes != null) {
+        return UserProfile.fromJson(retryRes);
+      }
+      return null;
     } catch (e) {
       debugPrint('Error getting current user profile: $e');
       return null;
@@ -43,6 +78,32 @@ class AuthService {
         if (namaPerusahaan != null) 'nama_perusahaan': namaPerusahaan,
       },
     );
+
+    final user = response.user;
+    if (user != null) {
+      try {
+        await _client.from('profiles').upsert({
+          'id': user.id,
+          'email': email,
+          'nama_lengkap': namaLengkap,
+          'role': role,
+        });
+
+        if (role == 'peserta') {
+          await _client.from('peserta_details').upsert({
+            'user_id': user.id,
+          }, onConflict: 'user_id');
+        } else if (role == 'perusahaan') {
+          await _client.from('perusahaan_details').upsert({
+            'user_id': user.id,
+            'nama_perusahaan': namaPerusahaan ?? namaLengkap,
+          }, onConflict: 'user_id');
+        }
+      } catch (e) {
+        debugPrint('Upsert profile post-signup notice: $e');
+      }
+    }
+
     return response;
   }
 

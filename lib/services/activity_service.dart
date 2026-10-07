@@ -54,10 +54,15 @@ class ActivityService {
     _mockActivities.insert(0, activity);
 
     try {
+      final json = Map<String, dynamic>.from(activity.toJson());
+      // Hilangkan dummy ID jika bukan UUID PostgreSQL
+      if (json['lowongan_id'] != null && json['lowongan_id'].toString().contains('vac-')) {
+        json['lowongan_id'] = null;
+      }
       await _client
           .from('kegiatan_magang')
-          .insert(activity.toJson())
-          .timeout(const Duration(seconds: 2));
+          .insert(json)
+          .timeout(const Duration(seconds: 4));
     } catch (e) {
       debugPrint('createActivity notice: $e');
     }
@@ -71,14 +76,17 @@ class ActivityService {
           .select('*, peserta:peserta_id(nim, profiles(nama_lengkap))')
           .eq('peserta_id', pesertaId)
           .order('tanggal', ascending: false)
-          .timeout(const Duration(seconds: 2));
+          .timeout(const Duration(seconds: 4));
 
       final list = (res as List).map((e) => ActivityModel.fromJson(e)).toList();
-      if (list.isNotEmpty) return list;
+      return list;
     } catch (e) {
       debugPrint('getMyActivities notice: $e');
     }
-    return List.from(_mockActivities);
+    if (pesertaId.contains('pes-')) {
+      return List.from(_mockActivities);
+    }
+    return [];
   }
 
   // Mengambil semua kegiatan untuk monitoring oleh Admin / Pembimbing Perusahaan

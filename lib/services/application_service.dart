@@ -119,14 +119,17 @@ class ApplicationService {
           .select('*, lowongan(*, perusahaan:perusahaan_id(nama_perusahaan, alamat))')
           .eq('peserta_id', pesertaId)
           .order('tanggal_daftar', ascending: false)
-          .timeout(const Duration(seconds: 2));
+          .timeout(const Duration(seconds: 4));
 
       final list = (res as List).map((e) => ApplicationModel.fromJson(e)).toList();
-      if (list.isNotEmpty) return list;
+      return list;
     } catch (e) {
       debugPrint('getMyApplications notice: $e');
     }
-    return List.from(_mockApplications);
+    if (pesertaId.contains('pes-')) {
+      return List.from(_mockApplications);
+    }
+    return [];
   }
 
   // Mengambil pendaftar untuk suatu lowongan (Role Perusahaan)

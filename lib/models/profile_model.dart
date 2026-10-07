@@ -27,11 +27,23 @@ class UserProfile {
       role: json['role'] as String? ?? 'peserta',
       nomorTelepon: json['nomor_telepon'] as String?,
       avatarUrl: json['avatar_url'] as String?,
-      pesertaDetails: json['peserta_details'] != null && (json['peserta_details'] as List).isNotEmpty
-          ? PesertaProfile.fromJson(json['peserta_details'][0])
+      pesertaDetails: json['peserta_details'] != null
+          ? (json['peserta_details'] is List
+              ? ((json['peserta_details'] as List).isNotEmpty
+                  ? PesertaProfile.fromJson((json['peserta_details'] as List)[0])
+                  : null)
+              : (json['peserta_details'] is Map
+                  ? PesertaProfile.fromJson(json['peserta_details'] as Map<String, dynamic>)
+                  : null))
           : null,
-      perusahaanDetails: json['perusahaan_details'] != null && (json['perusahaan_details'] as List).isNotEmpty
-          ? PerusahaanProfile.fromJson(json['perusahaan_details'][0])
+      perusahaanDetails: json['perusahaan_details'] != null
+          ? (json['perusahaan_details'] is List
+              ? ((json['perusahaan_details'] as List).isNotEmpty
+                  ? PerusahaanProfile.fromJson((json['perusahaan_details'] as List)[0])
+                  : null)
+              : (json['perusahaan_details'] is Map
+                  ? PerusahaanProfile.fromJson(json['perusahaan_details'] as Map<String, dynamic>)
+                  : null))
           : null,
     );
   }
