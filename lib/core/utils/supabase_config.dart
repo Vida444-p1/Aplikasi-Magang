@@ -8,15 +8,19 @@ class SupabaseConfig {
   static User? get currentUser => auth.currentUser;
   static String? get currentUserId => auth.currentUser?.id;
 
+  static String get url => dotenv.env['SUPABASE_URL'] ?? 'https://gymauechavhjvjtpziaj.supabase.co';
+  static String get anonKey => dotenv.env['SUPABASE_ANON_KEY'] ?? '';
+
   static Future<void> initialize() async {
     await dotenv.load(fileName: ".env");
 
-    final url = dotenv.env['SUPABASE_URL'] ?? 'https://sample-project-id.supabase.co';
-    final anonKey = dotenv.env['SUPABASE_ANON_KEY'] ?? 'sample-anon-key';
+    final supabaseUrl = url;
+    final supabaseAnonKey = anonKey;
 
     await Supabase.initialize(
-      url: url,
-      anonKey: anonKey,
+      url: supabaseUrl,
+      // ignore: deprecated_member_use
+      anonKey: supabaseAnonKey,
     );
   }
 }

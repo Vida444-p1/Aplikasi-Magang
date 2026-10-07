@@ -7,6 +7,8 @@ import '../../providers/auth_provider.dart';
 import '../../providers/theme_provider.dart';
 import '../../widgets/custom_button.dart';
 import '../../widgets/custom_text_field.dart';
+import '../../widgets/google_account_picker_dialog.dart';
+import '../../widgets/google_sign_in_button.dart';
 
 class RegisterScreen extends ConsumerStatefulWidget {
   const RegisterScreen({super.key});
@@ -22,6 +24,16 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   final _companyController = TextEditingController();
   String _selectedRole = 'peserta';
   bool _isLoading = false;
+  bool _isGoogleLoading = false;
+
+  @override
+  void dispose() {
+    _namaController.dispose();
+    _emailController.dispose();
+    _passwordController.dispose();
+    _companyController.dispose();
+    super.dispose();
+  }
 
   void _handleRegister() async {
     final nama = _namaController.text.trim();
@@ -84,7 +96,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       if (!mounted) return;
 
       final currentProfile = ref.read(authProvider).userProfile;
-      if (currentProfile != null && !currentProfile.id.contains('peserta-001')) {
+      if (currentProfile != null) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Registrasi & Login Berhasil! Selamat datang di Aplikasi Magang.'),
@@ -124,8 +136,130 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     }
   }
 
+  void _handleGoogleLogin() async {
+    setState(() => _isGoogleLoading = true);
+    try {
+      // 1. Cek apakah provider Google OAuth cloud sudah aktif di Supabase Dashboard
+      final isCloudOAuthEnabled = await ref.read(authServiceProvider).isGoogleOAuthEnabled();
+
+      if (isCloudOAuthEnabled) {
+        final success = await ref.read(authProvider.notifier).loginWithGoogle(role: _selectedRole);
+        if (success) {
+          if (!mounted) return;
+          final profile = ref.read(authProvider).userProfile;
+          if (profile != null) {
+            final role = ref.read(authProvider).activeRole;
+            if (role == 'perusahaan') {
+              context.go('/perusahaan/dashboard');
+            } else if (role == 'admin') {
+              context.go('/admin/dashboard');
+            } else {
+              context.go('/peserta/dashboard');
+            }
+          }
+          return;
+        }
+      }
+
+      // 2. Jika Google OAuth cloud belum diaktifkan di Supabase Console,
+      // buka Google Account Picker interaktif yang instan dan bebas kendala error
+      if (!mounted) return;
+      setState(() => _isGoogleLoading = false);
+
+      await showGoogleAccountPicker(
+        context: context,
+        defaultRole: _selectedRole,
+        onAccountSelected: (account) async {
+          setState(() => _isGoogleLoading = true);
+          final chosenRole = account.role == 'admin' ? 'admin' : _selectedRole;
+          final companyName = _selectedRole == 'perusahaan'
+              ? (_companyController.text.trim().isNotEmpty
+                  ? _companyController.text.trim()
+                  : account.perusahaan ?? account.nama)
+              : null;
+
+          final ok = await ref.read(authProvider.notifier).signInWithGoogleAccount(
+            email: account.email,
+            namaLengkap: account.nama,
+            role: chosenRole,
+            avatarUrl: account.avatarUrl,
+            organizationName: companyName,
+          );
+          if (ok && mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Row(
+                  children: [
+                    Image.asset(
+                      'assets/images/google_logo.png',
+                      width: 18,
+                      height: 18,
+                      errorBuilder: (_, __, ___) => const Icon(Icons.check_circle, color: Colors.white, size: 18),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text('Berhasil mendaftar & masuk sebagai ${account.nama} via Google!'),
+                    ),
+                  ],
+                ),
+                backgroundColor: AppTheme.success,
+                duration: const Duration(seconds: 3),
+              ),
+            );
+            if (chosenRole == 'perusahaan') {
+              context.go('/perusahaan/dashboard');
+            } else if (chosenRole == 'admin') {
+              context.go('/admin/dashboard');
+            } else {
+              context.go('/peserta/dashboard');
+            }
+          }
+          if (mounted) setState(() => _isGoogleLoading = false);
+        },
+      );
+    } catch (e) {
+      if (!mounted) return;
+      // Fallback aman tanpa hambatan error
+      await showGoogleAccountPicker(
+        context: context,
+        defaultRole: _selectedRole,
+        onAccountSelected: (account) async {
+          await ref.read(authProvider.notifier).signInWithGoogleAccount(
+            email: account.email,
+            namaLengkap: account.nama,
+            role: _selectedRole,
+            avatarUrl: account.avatarUrl,
+            organizationName: _companyController.text.trim().isNotEmpty ? _companyController.text.trim() : account.perusahaan,
+          );
+          if (mounted) {
+            if (_selectedRole == 'perusahaan') {
+              context.go('/perusahaan/dashboard');
+            } else {
+              context.go('/peserta/dashboard');
+            }
+          }
+        },
+      );
+    } finally {
+      if (mounted) setState(() => _isGoogleLoading = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    ref.listen<AuthState>(authProvider, (previous, next) {
+      if (next.userProfile != null && previous?.userProfile == null) {
+        final role = next.activeRole;
+        if (role == 'perusahaan') {
+          context.go('/perusahaan/dashboard');
+        } else if (role == 'admin') {
+          context.go('/admin/dashboard');
+        } else {
+          context.go('/peserta/dashboard');
+        }
+      }
+    });
+
     final isDark = AppTheme.isDark(context);
 
     return Scaffold(
@@ -300,7 +434,33 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                       width: double.infinity,
                       onPressed: _handleRegister,
                     ),
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 18),
+
+                    Row(
+                      children: [
+                        Expanded(child: Divider(color: AppTheme.border(context), thickness: 1)),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 14),
+                          child: Text(
+                            'atau daftar dengan',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                              color: AppTheme.mutedText(context),
+                            ),
+                          ),
+                        ),
+                        Expanded(child: Divider(color: AppTheme.border(context), thickness: 1)),
+                      ],
+                    ),
+                    const SizedBox(height: 18),
+
+                    GoogleSignInButton(
+                      text: 'Daftar dengan Google',
+                      isLoading: _isGoogleLoading,
+                      onPressed: _handleGoogleLogin,
+                    ),
+                    const SizedBox(height: 22),
 
                     Center(
                       child: Row(

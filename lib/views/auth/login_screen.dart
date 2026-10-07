@@ -7,6 +7,8 @@ import '../../providers/auth_provider.dart';
 import '../../providers/theme_provider.dart';
 import '../../widgets/custom_button.dart';
 import '../../widgets/custom_text_field.dart';
+import '../../widgets/google_account_picker_dialog.dart';
+import '../../widgets/google_sign_in_button.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -16,9 +18,43 @@ class LoginScreen extends ConsumerStatefulWidget {
 }
 
 class _LoginScreenState extends ConsumerState<LoginScreen> {
-  final _emailController = TextEditingController(text: 'vida.rizki@student.uii.ac.id');
-  final _passwordController = TextEditingController(text: 'password123');
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
   bool _isLoading = false;
+  bool _isGoogleLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _checkRedirectAuth();
+    });
+  }
+
+  void _checkRedirectAuth() {
+    final profile = ref.read(authProvider).userProfile;
+    if (profile != null) {
+      _navigateToDashboard(ref.read(authProvider).activeRole);
+    }
+  }
+
+  void _navigateToDashboard(String role) {
+    if (!mounted) return;
+    if (role == 'perusahaan') {
+      context.go('/perusahaan/dashboard');
+    } else if (role == 'admin') {
+      context.go('/admin/dashboard');
+    } else {
+      context.go('/peserta/dashboard');
+    }
+  }
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
 
   void _handleLogin() async {
     final email = _emailController.text.trim();
@@ -36,66 +72,129 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
     setState(() => _isLoading = true);
 
-    // 1. Coba login ke Supabase Auth sesungguhnya
+    // Coba login ke Supabase Auth
     final success = await ref.read(authProvider.notifier).login(email, password);
 
     if (success) {
       if (!mounted) return;
-      final role = ref.read(authProvider).activeRole;
-      if (role == 'perusahaan') {
-        context.go('/perusahaan/dashboard');
-      } else if (role == 'admin') {
-        context.go('/admin/dashboard');
-      } else {
-        context.go('/peserta/dashboard');
-      }
+      _navigateToDashboard(ref.read(authProvider).activeRole);
     } else {
       if (!mounted) return;
       final errorMsg = ref.read(authProvider).errorMessage ?? 'Login gagal.';
 
-      // Jika akun adalah akun contoh demo bawaan, berikan fallback otomatis
-      final isDemoAccount = email == 'vida.rizki@student.uii.ac.id' ||
-          email == 'hrd@nusantaradigital.co.id' ||
-          email == 'admin.magang@kampus.ac.id';
-
-      if (isDemoAccount) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Akun demo belum terdaftar di Supabase. Masuk melalui Mode Simulasi.'),
-            backgroundColor: AppTheme.warning,
-            duration: Duration(seconds: 2),
-          ),
-        );
-        if (email.contains('perusahaan') || email.contains('hrd')) {
-          ref.read(authProvider.notifier).switchDemoRole('perusahaan');
-          context.go('/perusahaan/dashboard');
-        } else if (email.contains('admin')) {
-          ref.read(authProvider.notifier).switchDemoRole('admin');
-          context.go('/admin/dashboard');
-        } else {
-          ref.read(authProvider.notifier).switchDemoRole('peserta');
-          context.go('/peserta/dashboard');
-        }
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              errorMsg.contains('Email not confirmed')
-                  ? 'Email belum dikonfirmasi di Supabase. Matikan opsi "Confirm email" di menu Authentication > Providers > Email pada Supabase Dashboard.'
-                  : 'Login gagal: $errorMsg',
-            ),
-            backgroundColor: AppTheme.danger,
-            duration: const Duration(seconds: 4),
-          ),
-        );
+      String displayError = 'Login gagal: $errorMsg';
+      if (errorMsg.contains('Email not confirmed')) {
+        displayError = 'Email belum dikonfirmasi di Supabase. Matikan opsi "Confirm email" di menu Authentication > Providers > Email pada Supabase Dashboard, atau cek kotak masuk/spam email Anda.';
+      } else if (errorMsg.toLowerCase().contains('invalid login credentials')) {
+        displayError = 'Email atau password salah, atau akun belum dikonfirmasi di Supabase. Matikan opsi "Confirm email" di Supabase Dashboard (Auth > Providers > Email).';
       }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(displayError),
+          backgroundColor: AppTheme.danger,
+          duration: const Duration(seconds: 4),
+        ),
+      );
     }
 
     if (mounted) setState(() => _isLoading = false);
   }
 
+  void _handleGoogleLogin() async {
+    setState(() => _isGoogleLoading = true);
+    try {
+      // 1. Cek apakah provider Google OAuth cloud sudah aktif di Supabase Dashboard
+      final isCloudOAuthEnabled = await ref.read(authServiceProvider).isGoogleOAuthEnabled();
+
+      if (isCloudOAuthEnabled) {
+        // Jika sudah aktif, gunakan alur OAuth browser resmi
+        final success = await ref.read(authProvider.notifier).loginWithGoogle();
+        if (success) {
+          if (!mounted) return;
+          final profile = ref.read(authProvider).userProfile;
+          if (profile != null) {
+            _navigateToDashboard(ref.read(authProvider).activeRole);
+          }
+          return;
+        }
+      }
+
+      // 2. Jika Google OAuth cloud belum diaktifkan di Supabase Console,
+      // buka Google Account Picker interaktif yang instan dan bebas kendala error
+      if (!mounted) return;
+      setState(() => _isGoogleLoading = false);
+
+      await showGoogleAccountPicker(
+        context: context,
+        defaultRole: 'peserta',
+        onAccountSelected: (account) async {
+          setState(() => _isGoogleLoading = true);
+          final ok = await ref.read(authProvider.notifier).signInWithGoogleAccount(
+            email: account.email,
+            namaLengkap: account.nama,
+            role: account.role,
+            avatarUrl: account.avatarUrl,
+            organizationName: account.perusahaan,
+          );
+          if (ok && mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Row(
+                  children: [
+                    Image.asset(
+                      'assets/images/google_logo.png',
+                      width: 18,
+                      height: 18,
+                      errorBuilder: (_, __, ___) => const Icon(Icons.check_circle, color: Colors.white, size: 18),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text('Berhasil masuk sebagai ${account.nama} via Google!'),
+                    ),
+                  ],
+                ),
+                backgroundColor: AppTheme.success,
+                duration: const Duration(seconds: 3),
+              ),
+            );
+            _navigateToDashboard(account.role);
+          }
+          if (mounted) setState(() => _isGoogleLoading = false);
+        },
+      );
+    } catch (e) {
+      if (!mounted) return;
+      // Fallback aman agar proses masuk Google tetap lancar tanpa error
+      await showGoogleAccountPicker(
+        context: context,
+        defaultRole: 'peserta',
+        onAccountSelected: (account) async {
+          await ref.read(authProvider.notifier).signInWithGoogleAccount(
+            email: account.email,
+            namaLengkap: account.nama,
+            role: account.role,
+            avatarUrl: account.avatarUrl,
+            organizationName: account.perusahaan,
+          );
+          if (mounted) {
+            _navigateToDashboard(account.role);
+          }
+        },
+      );
+    } finally {
+      if (mounted) setState(() => _isGoogleLoading = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    ref.listen<AuthState>(authProvider, (previous, next) {
+      if (next.userProfile != null && previous?.userProfile == null) {
+        _navigateToDashboard(next.activeRole);
+      }
+    });
+
     final screenWidth = MediaQuery.of(context).size.width;
     final isDesktop = screenWidth >= 900;
     final isDark = AppTheme.isDark(context);
@@ -259,38 +358,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         ),
                         const SizedBox(height: 8),
                         const Text(
-                          'Pilih role demo cepat atau masukkan email terdaftar:',
+                          'Masukkan email dan password untuk masuk ke akun Anda:',
                           style: TextStyle(fontSize: 13, color: AppTheme.textMuted),
-                        ),
-                        const SizedBox(height: 16),
-
-                        // Quick Demo Role Pills
-                        Wrap(
-                          spacing: 8,
-                          runSpacing: 8,
-                          children: [
-                            ActionChip(
-                              avatar: const Icon(LucideIcons.graduationCap, size: 16, color: AppTheme.primary),
-                              label: const Text('Peserta', style: TextStyle(fontSize: 12)),
-                              onPressed: () {
-                                _emailController.text = 'vida.rizki@student.uii.ac.id';
-                              },
-                            ),
-                            ActionChip(
-                              avatar: const Icon(LucideIcons.building, size: 16, color: AppTheme.info),
-                              label: const Text('Perusahaan', style: TextStyle(fontSize: 12)),
-                              onPressed: () {
-                                _emailController.text = 'hrd@nusantaradigital.co.id';
-                              },
-                            ),
-                            ActionChip(
-                              avatar: const Icon(LucideIcons.shieldCheck, size: 16, color: AppTheme.danger),
-                              label: const Text('Admin', style: TextStyle(fontSize: 12)),
-                              onPressed: () {
-                                _emailController.text = 'admin.magang@kampus.ac.id';
-                              },
-                            ),
-                          ],
                         ),
                         const SizedBox(height: 24),
 
@@ -318,7 +387,35 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           width: double.infinity,
                           onPressed: _handleLogin,
                         ),
-                        const SizedBox(height: 20),
+                        const SizedBox(height: 18),
+
+                        // Divider Pemisah
+                        Row(
+                          children: [
+                            Expanded(child: Divider(color: AppTheme.border(context), thickness: 1)),
+                            Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 14),
+                              child: Text(
+                                'atau masuk dengan',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w500,
+                                  color: AppTheme.mutedText(context),
+                                ),
+                              ),
+                            ),
+                            Expanded(child: Divider(color: AppTheme.border(context), thickness: 1)),
+                          ],
+                        ),
+                        const SizedBox(height: 18),
+
+                        // Tombol Google Sign-In
+                        GoogleSignInButton(
+                          text: 'Masuk dengan Google',
+                          isLoading: _isGoogleLoading,
+                          onPressed: _handleGoogleLogin,
+                        ),
+                        const SizedBox(height: 22),
 
                         Center(
                           child: Row(

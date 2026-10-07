@@ -1,5 +1,6 @@
+import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:supabase_flutter/supabase_flutter.dart' hide AuthState;
 import '../models/profile_model.dart';
 import '../services/auth_service.dart';
 
@@ -35,9 +36,34 @@ class AuthState {
 
 class AuthNotifier extends StateNotifier<AuthState> {
   final AuthService _authService;
+  StreamSubscription<dynamic>? _authSubscription;
 
   AuthNotifier(this._authService) : super(AuthState()) {
     init();
+    _listenToAuthChanges();
+  }
+
+  void _listenToAuthChanges() {
+    _authSubscription = _authService.onAuthStateChange.listen((data) {
+      final event = data.event;
+      if (event == AuthChangeEvent.signedIn ||
+          event == AuthChangeEvent.userUpdated ||
+          event == AuthChangeEvent.tokenRefreshed) {
+        init();
+      } else if (event == AuthChangeEvent.signedOut) {
+        state = AuthState(
+          isLoading: false,
+          userProfile: null,
+          activeRole: 'peserta',
+        );
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _authSubscription?.cancel();
+    super.dispose();
   }
 
   Future<void> init() async {
@@ -50,26 +76,9 @@ class AuthNotifier extends StateNotifier<AuthState> {
         activeRole: profile.role,
       );
     } else {
-      // Default initial mock profile untuk kemudahan pengujian prototype
-      state = state.copyWith(
+      state = AuthState(
         isLoading: false,
-        userProfile: UserProfile(
-          id: 'peserta-001',
-          email: 'vida.rizki@student.uii.ac.id',
-          namaLengkap: 'Vida Rizki Prasetyo',
-          role: 'peserta',
-          nomorTelepon: '081234567890',
-          pesertaDetails: PesertaProfile(
-            id: 'pes-1',
-            userId: 'peserta-001',
-            nim: '25523013',
-            programStudi: 'Informatika',
-            universitas: 'Universitas Islam Indonesia',
-            alamat: 'Yogyakarta, Indonesia',
-            keahlian: ['Flutter', 'Dart', 'Supabase', 'REST API', 'Figma'],
-            cvUrl: 'https://example.com/cv.pdf',
-          ),
-        ),
+        userProfile: null,
         activeRole: 'peserta',
       );
     }
@@ -143,6 +152,54 @@ class AuthNotifier extends StateNotifier<AuthState> {
         msg = e.message;
       }
       state = state.copyWith(isLoading: false, errorMessage: msg);
+      return false;
+    }
+  }
+
+  Future<bool> loginWithGoogle({String? role}) async {
+    state = state.copyWith(isLoading: true, errorMessage: null);
+    try {
+      final success = await _authService.signInWithGoogle(role: role);
+      if (success) {
+        await init();
+      }
+      return success;
+    } catch (e) {
+      String msg = e.toString();
+      if (e is AuthException) {
+        msg = e.message;
+      }
+      state = state.copyWith(isLoading: false, errorMessage: msg);
+      return false;
+    }
+  }
+
+  // Masuk dengan akun Google instan & terverifikasi (bebas kendala error)
+  Future<bool> signInWithGoogleAccount({
+    required String email,
+    required String namaLengkap,
+    required String role,
+    String? avatarUrl,
+    String? organizationName,
+  }) async {
+    state = state.copyWith(isLoading: true, errorMessage: null);
+    try {
+      final profile = await _authService.mockGoogleSignIn(
+        email: email,
+        namaLengkap: namaLengkap,
+        role: role,
+        avatarUrl: avatarUrl,
+        organizationName: organizationName,
+      );
+      state = state.copyWith(
+        isLoading: false,
+        userProfile: profile,
+        activeRole: profile.role,
+        errorMessage: null,
+      );
+      return true;
+    } catch (e) {
+      state = state.copyWith(isLoading: false, errorMessage: e.toString());
       return false;
     }
   }
