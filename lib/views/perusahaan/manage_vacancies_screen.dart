@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:intl/intl.dart';
 import '../../core/theme/app_theme.dart';
+import '../../models/vacancy_model.dart';
 import '../../providers/vacancy_provider.dart';
 import '../../widgets/responsive_scaffold.dart';
 import '../../widgets/status_badge.dart';
@@ -254,12 +255,8 @@ class ManageVacanciesScreen extends ConsumerWidget {
                                     const SizedBox(width: 4),
                                     IconButton(
                                       icon: const Icon(LucideIcons.trash2, size: 16, color: AppTheme.danger),
-                                      tooltip: 'Nonaktifkan Lowongan',
-                                      onPressed: () {
-                                        ScaffoldMessenger.of(context).showSnackBar(
-                                          const SnackBar(content: Text('Lowongan berhasil dinonaktifkan.')),
-                                        );
-                                      },
+                                      tooltip: 'Kelola / Hapus Lowongan',
+                                      onPressed: () => _showManageVacancyDialog(context, ref, v),
                                     ),
                                   ],
                                 ),
@@ -275,6 +272,142 @@ class ManageVacanciesScreen extends ConsumerWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  void _showManageVacancyDialog(BuildContext context, WidgetRef ref, VacancyModel vacancy) {
+    final isAktif = vacancy.status.toLowerCase() == 'aktif';
+
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: AppTheme.danger.withValues(alpha: 0.12),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(LucideIcons.alertTriangle, color: AppTheme.danger, size: 20),
+            ),
+            const SizedBox(width: 12),
+            const Expanded(
+              child: Text(
+                'Kelola Lowongan Magang',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Tindakan untuk posisi "${vacancy.posisi}":',
+              style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+            ),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: AppTheme.surfaceElevated(context),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: AppTheme.border(context)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(isAktif ? LucideIcons.eyeOff : LucideIcons.eye, size: 15, color: isAktif ? Colors.orange : Colors.green),
+                      const SizedBox(width: 8),
+                      Text(
+                        isAktif ? 'Nonaktifkan / Tutup Lowongan' : 'Aktifkan Kembali Lowongan',
+                        style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    isAktif
+                        ? 'Lowongan akan ditutup dan disembunyikan dari pencarian mahasiswa magang.'
+                        : 'Lowongan akan kembali aktif dan dapat didaftar oleh mahasiswa.',
+                    style: TextStyle(fontSize: 12, color: AppTheme.mutedText(context)),
+                  ),
+                  const Divider(height: 18),
+                  Row(
+                    children: const [
+                      Icon(LucideIcons.trash2, size: 15, color: AppTheme.danger),
+                      SizedBox(width: 8),
+                      Text(
+                        'Hapus Permanen',
+                        style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: AppTheme.danger),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Menghapus lowongan sepenuhnya dari sistem sehingga langsung hilang.',
+                    style: TextStyle(fontSize: 12, color: AppTheme.mutedText(context)),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        actionsPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Batal'),
+          ),
+          OutlinedButton.icon(
+            icon: Icon(isAktif ? LucideIcons.eyeOff : LucideIcons.eye, size: 14),
+            label: Text(isAktif ? 'Tutup Lowongan' : 'Aktifkan'),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: isAktif ? Colors.orange.shade700 : Colors.green.shade700,
+            ),
+            onPressed: () async {
+              Navigator.pop(dialogContext);
+              final newStatus = isAktif ? 'ditutup' : 'aktif';
+              final updated = vacancy.copyWith(status: newStatus);
+              await ref.read(vacancyServiceProvider).updateVacancy(vacancy.id, updated);
+              ref.invalidate(vacancyListProvider);
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(isAktif ? 'Lowongan berhasil dinonaktifkan (ditutup).' : 'Lowongan berhasil diaktifkan kembali.'),
+                    backgroundColor: isAktif ? Colors.orange.shade800 : Colors.green.shade700,
+                  ),
+                );
+              }
+            },
+          ),
+          ElevatedButton.icon(
+            icon: const Icon(LucideIcons.trash2, size: 14),
+            label: const Text('Hapus Permanen'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.danger,
+              foregroundColor: Colors.white,
+            ),
+            onPressed: () async {
+              Navigator.pop(dialogContext);
+              await ref.read(vacancyServiceProvider).deleteVacancy(vacancy.id);
+              ref.invalidate(vacancyListProvider);
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Lowongan berhasil dihapus dari daftar.'),
+                    backgroundColor: AppTheme.danger,
+                  ),
+                );
+              }
+            },
+          ),
+        ],
       ),
     );
   }

@@ -88,4 +88,44 @@ class VacancyModel {
       'status': status.toLowerCase(),
     };
   }
+
+  VacancyModel copyWith({
+    String? id,
+    String? perusahaanId,
+    String? posisi,
+    String? bidang,
+    String? deskripsi,
+    String? tanggungJawab,
+    String? persyaratan,
+    String? lokasi,
+    String? sistemKerja,
+    int? durasiBulan,
+    String? jadwal,
+    int? kuota,
+    DateTime? batasPendaftaran,
+    String? status,
+    String? namaPerusahaan,
+    String? alamatPerusahaan,
+    DateTime? createdAt,
+  }) {
+    return VacancyModel(
+      id: id ?? this.id,
+      perusahaanId: perusahaanId ?? this.perusahaanId,
+      posisi: posisi ?? this.posisi,
+      bidang: bidang ?? this.bidang,
+      deskripsi: deskripsi ?? this.deskripsi,
+      tanggungJawab: tanggungJawab ?? this.tanggungJawab,
+      persyaratan: persyaratan ?? this.persyaratan,
+      lokasi: lokasi ?? this.lokasi,
+      sistemKerja: sistemKerja ?? this.sistemKerja,
+      durasiBulan: durasiBulan ?? this.durasiBulan,
+      jadwal: jadwal ?? this.jadwal,
+      kuota: kuota ?? this.kuota,
+      batasPendaftaran: batasPendaftaran ?? this.batasPendaftaran,
+      status: status ?? this.status,
+      namaPerusahaan: namaPerusahaan ?? this.namaPerusahaan,
+      alamatPerusahaan: alamatPerusahaan ?? this.alamatPerusahaan,
+      createdAt: createdAt ?? this.createdAt,
+    );
+  }
 }

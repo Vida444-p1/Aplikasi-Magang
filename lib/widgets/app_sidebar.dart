@@ -94,23 +94,7 @@ class AppSidebar extends ConsumerWidget {
 
           Divider(color: AppTheme.borderSubtleColor(context), height: 1),
 
-          // Interactive Role Switcher Segmented Control
-          Container(
-            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-            padding: const EdgeInsets.all(4),
-            decoration: BoxDecoration(
-              color: AppTheme.surfaceElevated(context),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: AppTheme.border(context), width: 1),
-            ),
-            child: Row(
-              children: [
-                _roleTab(ref, 'Peserta', 'peserta', activeRole, context),
-                _roleTab(ref, 'Perusahaan', 'perusahaan', activeRole, context),
-                _roleTab(ref, 'Admin', 'admin', activeRole, context),
-              ],
-            ),
-          ),
+          const SizedBox(height: 8),
 
           // Menu Navigation
           Expanded(
@@ -238,52 +222,6 @@ class AppSidebar extends ConsumerWidget {
     );
   }
 
-  Widget _roleTab(WidgetRef ref, String label, String roleKey, String activeRole, BuildContext context) {
-    final isSelected = activeRole == roleKey;
-    final isDark = AppTheme.isDark(context);
-
-    return Expanded(
-      child: GestureDetector(
-        onTap: () {
-          ref.read(authProvider.notifier).switchDemoRole(roleKey);
-          if (roleKey == 'peserta') {
-            context.go('/peserta/dashboard');
-          } else if (roleKey == 'perusahaan') {
-            context.go('/perusahaan/dashboard');
-          } else {
-            context.go('/admin/dashboard');
-          }
-        },
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 7),
-          alignment: Alignment.center,
-          decoration: BoxDecoration(
-            color: isSelected
-                ? (isDark ? AppTheme.surfaceDarkElevated : Colors.white)
-                : Colors.transparent,
-            borderRadius: BorderRadius.circular(9),
-            boxShadow: isSelected
-                ? [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: isDark ? 0.25 : 0.06),
-                      blurRadius: 6,
-                      offset: const Offset(0, 2),
-                    ),
-                  ]
-                : null,
-          ),
-          child: Text(
-            label,
-            style: TextStyle(
-              fontSize: 11,
-              fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-              color: isSelected ? AppTheme.primary : AppTheme.mutedText(context),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
 
   List<Widget> _buildMenuItems(BuildContext context, String role) {
     if (role == 'peserta') {

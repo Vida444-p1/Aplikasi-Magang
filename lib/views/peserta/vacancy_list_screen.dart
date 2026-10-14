@@ -114,7 +114,9 @@ class VacancyListScreen extends ConsumerWidget {
               ),
               error: (err, _) => Center(child: Text('Terjadi kesalahan: $err')),
               data: (vacancies) {
-                if (vacancies.isEmpty) {
+                final activeVacancies = vacancies.where((v) => v.status.toLowerCase() == 'aktif').toList();
+
+                if (activeVacancies.isEmpty) {
                   return Container(
                     padding: const EdgeInsets.all(48),
                     decoration: BoxDecoration(
@@ -135,7 +137,7 @@ class VacancyListScreen extends ConsumerWidget {
                           ),
                           const SizedBox(height: 16),
                           Text(
-                            'Tidak ada lowongan ditemukan',
+                            'Tidak ada lowongan aktif ditemukan',
                             style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: AppTheme.text(context)),
                           ),
                           const SizedBox(height: 6),
@@ -153,7 +155,7 @@ class VacancyListScreen extends ConsumerWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Menampilkan ${vacancies.length} lowongan magang aktif',
+                      'Menampilkan ${activeVacancies.length} lowongan magang aktif',
                       style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.mutedText(context)),
                     ),
                     const SizedBox(height: 12),
@@ -170,9 +172,9 @@ class VacancyListScreen extends ConsumerWidget {
                             crossAxisSpacing: 16,
                             mainAxisSpacing: 16,
                           ),
-                          itemCount: vacancies.length,
+                          itemCount: activeVacancies.length,
                           itemBuilder: (context, index) {
-                            final v = vacancies[index];
+                            final v = activeVacancies[index];
                             final initial = (v.namaPerusahaan != null && v.namaPerusahaan!.isNotEmpty)
                                 ? v.namaPerusahaan![0].toUpperCase()
                                 : 'P';
