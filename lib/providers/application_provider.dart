@@ -13,3 +13,8 @@ final applicantsByVacancyProvider = FutureProvider.family<List<ApplicationModel>
   final service = ref.watch(applicationServiceProvider);
   return service.getApplicantsByVacancyId(lowonganId);
 });
+
+final applicationDetailProvider = FutureProvider.family<ApplicationModel?, String>((ref, pendaftaranId) async {
+  final service = ref.watch(applicationServiceProvider);
+  return service.getApplicationById(pendaftaranId);
+});

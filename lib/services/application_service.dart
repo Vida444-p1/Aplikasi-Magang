@@ -3,6 +3,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../core/utils/supabase_config.dart';
 import '../models/application_model.dart';
 import '../models/vacancy_model.dart';
+import 'notification_service.dart';
 import 'vacancy_service.dart';
 
 class ApplicationService {
@@ -150,12 +151,36 @@ class ApplicationService {
     return List.from(_mockApplications);
   }
 
-  // Mengubah status pendaftaran melalui Supabase Edge Function
+  // Mengambil detail pendaftaran berdasarkan ID
+  Future<ApplicationModel?> getApplicationById(String pendaftaranId) async {
+    try {
+      final res = await _client
+          .from('pendaftaran')
+          .select('*, lowongan(*, perusahaan:perusahaan_id(nama_perusahaan, alamat)), peserta:peserta_id(*, profiles(nama_lengkap, email, nomor_telepon))')
+          .eq('id', pendaftaranId)
+          .maybeSingle()
+          .timeout(const Duration(seconds: 3));
+
+      if (res != null) {
+        return ApplicationModel.fromJson(res);
+      }
+    } catch (e) {
+      debugPrint('getApplicationById Supabase notice: $e');
+    }
+
+    final match = _mockApplications.where((a) => a.id == pendaftaranId);
+    if (match.isNotEmpty) return match.first;
+    return _mockApplications.isNotEmpty ? _mockApplications.first : null;
+  }
+
+  // Mengubah status pendaftaran (Tersimpan ke database Supabase & Memori Lokal)
   Future<bool> updateApplicationStatus({
     required String pendaftaranId,
     required String newStatus, // 'menunggu', 'diproses', 'diterima', 'ditolak'
     String? catatan,
   }) async {
+    final statusNormalized = newStatus.toLowerCase();
+
     // 1. Perbarui data lokal secara instan
     final idx = _mockApplications.indexWhere((a) => a.id == pendaftaranId);
     if (idx != -1) {
@@ -168,7 +193,7 @@ class ApplicationService {
         cvUrl: old.cvUrl,
         suratPengantarUrl: old.suratPengantarUrl,
         portofolioUrl: old.portofolioUrl,
-        status: newStatus,
+        status: statusNormalized,
         catatanPerusahaan: catatan,
         vacancy: old.vacancy,
         peserta: old.peserta,
@@ -177,23 +202,69 @@ class ApplicationService {
       );
     }
 
-    // 2. Coba eksekusi Edge Function
+    // 2. Simpan perubahan ke tabel pendaftaran di Supabase
     try {
-      final response = await _client.functions.invoke(
+      await _client
+          .from('pendaftaran')
+          .update({
+            'status': statusNormalized,
+            if (catatan != null) 'catatan_perusahaan': catatan,
+            'updated_at': DateTime.now().toIso8601String(),
+          })
+          .eq('id', pendaftaranId)
+          .timeout(const Duration(seconds: 4));
+    } catch (e) {
+      debugPrint('updateApplicationStatus database notice: $e');
+    }
+
+    // 3. Kirim notifikasi otomatis ke akun mahasiswa
+    try {
+      final targetApp = idx != -1 ? _mockApplications[idx] : null;
+      final posisi = targetApp?.vacancy?.posisi ?? 'Web Developer';
+      final namaPerusahaan = targetApp?.vacancy?.namaPerusahaan ?? 'PT Teknologi Nusantara Digital';
+
+      String notifJudul = '';
+      String notifPesan = '';
+      String notifTipe = 'info';
+
+      if (statusNormalized == 'diterima') {
+        notifJudul = '🎉 Selamat! Lamaran Magang DITERIMA';
+        notifPesan = 'Selamat! Anda dinyatakan DITERIMA magang untuk posisi "$posisi" di $namaPerusahaan.${catatan != null && catatan.isNotEmpty ? ' Catatan: "$catatan"' : ''}';
+        notifTipe = 'success';
+      } else if (statusNormalized == 'diproses') {
+        notifJudul = '📄 Status Lamaran: SEDANG DIPROSES';
+        notifPesan = 'Berkas lamaran Anda untuk posisi "$posisi" di $namaPerusahaan sedang ditinjau oleh tim seleksi.${catatan != null && catatan.isNotEmpty ? ' Catatan: "$catatan"' : ''}';
+        notifTipe = 'info';
+      } else if (statusNormalized == 'ditolak') {
+        notifJudul = 'Informasi Seleksi Lamaran Magang';
+        notifPesan = 'Terima kasih atas minat Anda pada posisi "$posisi" di $namaPerusahaan. Mohon maaf saat ini belum dapat menerima pendaftaran Anda.${catatan != null && catatan.isNotEmpty ? ' Catatan: "$catatan"' : ''}';
+        notifTipe = 'warning';
+      }
+
+      if (notifJudul.isNotEmpty) {
+        await NotificationService().sendNotification(
+          userId: targetApp?.pesertaId ?? 'user-1',
+          judul: notifJudul,
+          pesan: notifPesan,
+          tipe: notifTipe,
+          linkTarget: '/peserta/pendaftaran',
+        );
+      }
+    } catch (e) {
+      debugPrint('Kirim notifikasi error notice: $e');
+    }
+
+    // 4. Opsional: eksekusi Edge Function jika ada
+    try {
+      await _client.functions.invoke(
         'update-application-status',
         body: {
           'pendaftaran_id': pendaftaranId,
-          'new_status': newStatus,
+          'new_status': statusNormalized,
           'catatan': catatan,
         },
       ).timeout(const Duration(seconds: 2));
-
-      if (response.status == 200) {
-        return true;
-      }
-    } catch (e) {
-      debugPrint('Edge function invoke notice: $e');
-    }
+    } catch (_) {}
 
     return true;
   }

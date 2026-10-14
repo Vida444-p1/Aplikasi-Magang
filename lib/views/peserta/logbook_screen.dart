@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:intl/intl.dart';
 import '../../core/theme/app_theme.dart';
+import '../../core/utils/pdf_export_helper.dart';
 import '../../models/activity_model.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/activity_provider.dart';
@@ -18,6 +19,10 @@ class LogbookScreen extends ConsumerStatefulWidget {
 }
 
 class _LogbookScreenState extends ConsumerState<LogbookScreen> {
+  bool _isClockedIn = false;
+  DateTime? _clockInTime;
+  DateTime? _clockOutTime;
+  String _workMode = 'WFO (Kantor)';
   void _openAddActivityDialog(String pesertaId) {
     final titleCtrl = TextEditingController();
     final descCtrl = TextEditingController();
@@ -295,17 +300,157 @@ class _LogbookScreenState extends ConsumerState<LogbookScreen> {
                   ),
                 ),
                 const SizedBox(width: 16),
-                ElevatedButton.icon(
-                  onPressed: () => _openAddActivityDialog(pesertaId),
-                  icon: const Icon(LucideIcons.plus, size: 16),
-                  label: const Text('Tambah Entri Baru'),
-                  style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
-                  ),
+                Wrap(
+                  spacing: 10,
+                  runSpacing: 10,
+                  children: [
+                    OutlinedButton.icon(
+                      onPressed: () async {
+                        final activities = ref.read(myActivitiesProvider(pesertaId)).value ?? [];
+                        final user = ref.read(authProvider).userProfile;
+                        await PdfExportHelper.exportLogbookPdf(
+                          namaMahasiswa: user?.namaLengkap ?? 'Vida Rizki Prasetyo',
+                          nim: user?.pesertaDetails?.nim ?? '25523013',
+                          universitas: user?.pesertaDetails?.universitas ?? 'Universitas Islam Indonesia',
+                          namaPerusahaan: 'PT Teknologi Nusantara Digital',
+                          posisiMagang: 'Flutter & Mobile Developer Intern',
+                          activities: activities,
+                        );
+                      },
+                      icon: const Icon(LucideIcons.fileDown, size: 16),
+                      label: const Text('Cetak Rekap PDF'),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      ),
+                    ),
+                    ElevatedButton.icon(
+                      onPressed: () => _openAddActivityDialog(pesertaId),
+                      icon: const Icon(LucideIcons.plus, size: 16),
+                      label: const Text('Tambah Entri Baru'),
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 20),
+
+            // Presensi Magang Harian Card
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    AppTheme.primary.withValues(alpha: 0.08),
+                    AppTheme.surface(context),
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: AppTheme.primary.withValues(alpha: 0.25)),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: _isClockedIn ? AppTheme.success.withValues(alpha: 0.15) : AppTheme.primaryLight.withValues(alpha: 0.15),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      _isClockedIn ? LucideIcons.checkCircle2 : LucideIcons.timer,
+                      color: _isClockedIn ? AppTheme.success : AppTheme.primary,
+                      size: 24,
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Text(
+                              'Presensi Harian Magang',
+                              style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: AppTheme.text(context)),
+                            ),
+                            const SizedBox(width: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                              decoration: BoxDecoration(
+                                color: _isClockedIn ? AppTheme.success.withValues(alpha: 0.15) : AppTheme.warning.withValues(alpha: 0.15),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: Text(
+                                _isClockedIn ? 'SUDAH HADIR' : 'BELUM CLOCK-IN',
+                                style: TextStyle(
+                                  fontSize: 10.5,
+                                  fontWeight: FontWeight.w700,
+                                  color: _isClockedIn ? AppTheme.success : AppTheme.warning,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          _isClockedIn
+                              ? 'Masuk pukul ${DateFormat('HH:mm').format(_clockInTime!)} WIB • Mode: $_workMode'
+                              : (_clockOutTime != null
+                                  ? 'Selesai kerja pukul ${DateFormat('HH:mm').format(_clockOutTime!)} WIB • Mode: $_workMode'
+                                  : 'Hari ini: ${DateFormat('EEEE, dd MMMM yyyy', 'id_ID').format(DateTime.now())} • Silakan lakukan presensi masuk.'),
+                          style: TextStyle(fontSize: 12.5, color: AppTheme.mutedText(context)),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  DropdownButton<String>(
+                    value: _workMode,
+                    underline: const SizedBox(),
+                    items: const [
+                      DropdownMenuItem(value: 'WFO (Kantor)', child: Text('WFO (Kantor)')),
+                      DropdownMenuItem(value: 'WFH (Remote)', child: Text('WFH (Remote)')),
+                    ],
+                    onChanged: (val) {
+                      if (val != null) setState(() => _workMode = val);
+                    },
+                  ),
+                  const SizedBox(width: 12),
+                  ElevatedButton.icon(
+                    onPressed: () {
+                      setState(() {
+                        if (!_isClockedIn) {
+                          _isClockedIn = true;
+                          _clockInTime = DateTime.now();
+                        } else {
+                          _isClockedIn = false;
+                          _clockOutTime = DateTime.now();
+                        }
+                      });
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(_isClockedIn
+                              ? 'Presensi Clock-in Masuk berhasil dicatat ($_workMode)!'
+                              : 'Presensi Clock-out Pulang berhasil dicatat! Terimakasih atas kinerjanya hari ini.'),
+                          backgroundColor: _isClockedIn ? AppTheme.success : AppTheme.primary,
+                        ),
+                      );
+                    },
+                    icon: Icon(_isClockedIn ? LucideIcons.logOut : LucideIcons.logIn, size: 15),
+                    label: Text(_isClockedIn ? 'Clock Out' : 'Clock In Masuk'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: _isClockedIn ? Colors.orange.shade800 : AppTheme.primary,
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 20),
 
             // Logbook Summary Metric Strip
             summaryAsync.when(

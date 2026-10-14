@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:intl/intl.dart';
 import '../../core/theme/app_theme.dart';
+import '../../core/utils/csv_export_helper.dart';
 import '../../providers/application_provider.dart';
 import '../../widgets/responsive_scaffold.dart';
 import '../../widgets/status_badge.dart';
@@ -63,24 +64,57 @@ class _ApplicantsScreenState extends ConsumerState<ApplicantsScreen> {
                     ],
                   ),
                 ),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: AppTheme.primaryLight.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: AppTheme.primary.withValues(alpha: 0.25)),
-                  ),
-                  child: const Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(LucideIcons.users, size: 15, color: AppTheme.primaryLight),
-                      SizedBox(width: 8),
-                      Text(
-                        'Posisi: Semua Lowongan',
-                        style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600, color: AppTheme.primaryLight),
+                Wrap(
+                  spacing: 10,
+                  runSpacing: 10,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: [
+                    OutlinedButton.icon(
+                      onPressed: () {
+                        final applicants = ref.read(applicantsByVacancyProvider('vac-1')).value ?? [];
+                        if (applicants.isEmpty) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Belum ada data pendaftar untuk diekspor.')),
+                          );
+                          return;
+                        }
+                        CsvExportHelper.exportApplicantsCsv(
+                          namaPerusahaan: 'PT Teknologi Nusantara Digital',
+                          applicants: applicants,
+                        );
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('File data pendaftar (CSV/Excel) berhasil diunduh!'),
+                            backgroundColor: AppTheme.success,
+                          ),
+                        );
+                      },
+                      icon: const Icon(LucideIcons.fileSpreadsheet, size: 15),
+                      label: const Text('Ekspor Excel/CSV'),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
                       ),
-                    ],
-                  ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: AppTheme.primaryLight.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: AppTheme.primary.withValues(alpha: 0.25)),
+                      ),
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(LucideIcons.users, size: 15, color: AppTheme.primaryLight),
+                          SizedBox(width: 8),
+                          Text(
+                            'Posisi: Semua Lowongan',
+                            style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600, color: AppTheme.primaryLight),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),

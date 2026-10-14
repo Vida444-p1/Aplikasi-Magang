@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../core/theme/app_theme.dart';
+import '../../core/utils/storage_helper.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/application_provider.dart';
 import '../../providers/vacancy_provider.dart';
@@ -24,6 +25,58 @@ class _ApplyScreenState extends ConsumerState<ApplyScreen> {
   final _suratController = TextEditingController(text: 'https://storage.supabase.co/documents/surat-kampus.pdf');
   final _portfolioController = TextEditingController(text: 'https://github.com/vidar');
   bool _isLoading = false;
+  String? _cvFileName;
+  String? _suratFileName;
+  bool _isUploadingCv = false;
+  bool _isUploadingSurat = false;
+
+  Future<void> _pickCv() async {
+    setState(() => _isUploadingCv = true);
+    final file = await StorageHelper.pickAndUploadDocument(
+      bucketName: 'documents',
+      allowedExtensions: ['pdf', 'doc', 'docx'],
+    );
+    setState(() => _isUploadingCv = false);
+
+    if (file != null) {
+      setState(() {
+        _cvController.text = file.url;
+        _cvFileName = '${file.fileName} (${StorageHelper.formatBytes(file.fileSize)})';
+      });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('File "${file.fileName}" siap dilampirkan!'),
+            backgroundColor: AppTheme.success,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _pickSurat() async {
+    setState(() => _isUploadingSurat = true);
+    final file = await StorageHelper.pickAndUploadDocument(
+      bucketName: 'documents',
+      allowedExtensions: ['pdf', 'doc', 'docx'],
+    );
+    setState(() => _isUploadingSurat = false);
+
+    if (file != null) {
+      setState(() {
+        _suratController.text = file.url;
+        _suratFileName = '${file.fileName} (${StorageHelper.formatBytes(file.fileSize)})';
+      });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Surat pengantar "${file.fileName}" siap dilampirkan!'),
+            backgroundColor: AppTheme.success,
+          ),
+        );
+      }
+    }
+  }
 
   void _handleSubmit() async {
     setState(() => _isLoading = true);
@@ -164,20 +217,104 @@ class _ApplyScreenState extends ConsumerState<ApplyScreen> {
                         ),
                         const SizedBox(height: 16),
 
-                        CustomTextField(
-                          label: 'Link Dokumen CV (Curriculum Vitae)*',
-                          hint: 'https://storage... atau Google Drive URL',
-                          controller: _cvController,
-                          prefixIcon: const Icon(LucideIcons.fileText, size: 18, color: AppTheme.primary),
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            Expanded(
+                              child: CustomTextField(
+                                label: 'Dokumen CV (Curriculum Vitae)*',
+                                hint: 'Pilih file PDF atau masukkan tautan URL',
+                                controller: _cvController,
+                                prefixIcon: const Icon(LucideIcons.fileText, size: 18, color: AppTheme.primary),
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            SizedBox(
+                              height: 48,
+                              child: OutlinedButton.icon(
+                                onPressed: _isUploadingCv ? null : _pickCv,
+                                icon: _isUploadingCv
+                                    ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2))
+                                    : const Icon(LucideIcons.uploadCloud, size: 16),
+                                label: Text(_isUploadingCv ? 'Mengunggah...' : 'Pilih PDF'),
+                                style: OutlinedButton.styleFrom(
+                                  padding: const EdgeInsets.symmetric(horizontal: 14),
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
+                        if (_cvFileName != null) ...[
+                          const SizedBox(height: 6),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                            decoration: BoxDecoration(
+                              color: AppTheme.success.withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(LucideIcons.checkCircle2, size: 14, color: AppTheme.success),
+                                const SizedBox(width: 6),
+                                Text(
+                                  'Terpilih: $_cvFileName',
+                                  style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600, color: AppTheme.success),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                         const SizedBox(height: 16),
 
-                        CustomTextField(
-                          label: 'Link Surat Pengantar Kampus (Opsional)',
-                          hint: 'Tautan surat rekomendasi atau pengantar universitas',
-                          controller: _suratController,
-                          prefixIcon: const Icon(LucideIcons.mail, size: 18, color: AppTheme.textMuted),
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            Expanded(
+                              child: CustomTextField(
+                                label: 'Surat Pengantar Kampus (Opsional)',
+                                hint: 'Pilih file surat pengantar atau masukkan tautan',
+                                controller: _suratController,
+                                prefixIcon: const Icon(LucideIcons.mail, size: 18, color: AppTheme.textMuted),
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            SizedBox(
+                              height: 48,
+                              child: OutlinedButton.icon(
+                                onPressed: _isUploadingSurat ? null : _pickSurat,
+                                icon: _isUploadingSurat
+                                    ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2))
+                                    : const Icon(LucideIcons.uploadCloud, size: 16),
+                                label: Text(_isUploadingSurat ? 'Mengunggah...' : 'Pilih PDF'),
+                                style: OutlinedButton.styleFrom(
+                                  padding: const EdgeInsets.symmetric(horizontal: 14),
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
+                        if (_suratFileName != null) ...[
+                          const SizedBox(height: 6),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                            decoration: BoxDecoration(
+                              color: AppTheme.info.withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(LucideIcons.checkCircle2, size: 14, color: AppTheme.info),
+                                const SizedBox(width: 6),
+                                Text(
+                                  'Terpilih: $_suratFileName',
+                                  style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600, color: AppTheme.info),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                         const SizedBox(height: 16),
 
                         CustomTextField(

@@ -22,6 +22,7 @@ class _ApplicantDetailScreenState extends ConsumerState<ApplicantDetailScreen> {
   final _catatanCtrl = TextEditingController(text: 'Profil dan portofolio sangat sesuai dengan kualifikasi yang dicari.');
   String _selectedStatus = 'diterima';
   bool _isLoading = false;
+  bool _initialized = false;
 
   void _updateStatus() async {
     setState(() => _isLoading = true);
@@ -36,6 +37,11 @@ class _ApplicantDetailScreenState extends ConsumerState<ApplicantDetailScreen> {
     if (!mounted) return;
 
     if (success) {
+      // Invalidate semua provider pelamar & pendaftaran agar UI langsung ter-refresh
+      ref.invalidate(applicantsByVacancyProvider);
+      ref.invalidate(myApplicationsProvider);
+      ref.invalidate(applicationDetailProvider(widget.applicantId));
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Status pelamar berhasil diubah menjadi: ${_selectedStatus.toUpperCase()}! Notifikasi otomatis terkirim.'),
@@ -48,6 +54,22 @@ class _ApplicantDetailScreenState extends ConsumerState<ApplicantDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final appAsync = ref.watch(applicationDetailProvider(widget.applicantId));
+    final app = appAsync.valueOrNull;
+
+    if (app != null && !_initialized) {
+      _selectedStatus = app.status;
+      if (app.catatanPerusahaan != null && app.catatanPerusahaan!.isNotEmpty) {
+        _catatanCtrl.text = app.catatanPerusahaan!;
+      }
+      _initialized = true;
+    }
+
+    final name = app?.namaPeserta ?? 'Vida Rizki Prasetyo';
+    final initial = name.isNotEmpty ? name[0].toUpperCase() : 'V';
+    final posisi = app?.vacancy?.posisi ?? 'Web Developer';
+    final currentStatus = app?.status ?? _selectedStatus;
+
     return ResponsiveScaffold(
       title: 'Review Berkas Pelamar',
       currentRoute: '/perusahaan/pelamar',
@@ -103,10 +125,10 @@ class _ApplicantDetailScreenState extends ConsumerState<ApplicantDetailScreen> {
                               ),
                               borderRadius: BorderRadius.circular(16),
                             ),
-                            child: const Center(
+                            child: Center(
                               child: Text(
-                                'V',
-                                style: TextStyle(fontSize: 26, fontWeight: FontWeight.w800, color: Colors.white),
+                                initial,
+                                style: const TextStyle(fontSize: 26, fontWeight: FontWeight.w800, color: Colors.white),
                               ),
                             ),
                           ),
@@ -116,23 +138,23 @@ class _ApplicantDetailScreenState extends ConsumerState<ApplicantDetailScreen> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  'Vida Rizki Prasetyo',
+                                  name,
                                   style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: AppTheme.text(context), letterSpacing: -0.3),
                                 ),
                                 const SizedBox(height: 4),
                                 Text(
-                                  'NIM: 25523013 • Program Studi Teknik Informatika',
-                                  style: TextStyle(fontSize: 13.5, color: AppTheme.mutedText(context)),
+                                  'Melamar untuk: $posisi',
+                                  style: const TextStyle(fontSize: 13.5, color: AppTheme.primary, fontWeight: FontWeight.w600),
                                 ),
                                 const SizedBox(height: 2),
-                                const Text(
-                                  'Universitas Islam Indonesia',
-                                  style: TextStyle(fontSize: 13, color: AppTheme.primary, fontWeight: FontWeight.w600),
+                                Text(
+                                  app?.emailPeserta ?? 'vidar@student.uii.ac.id',
+                                  style: TextStyle(fontSize: 13, color: AppTheme.mutedText(context)),
                                 ),
                               ],
                             ),
                           ),
-                          const StatusBadge(status: 'diproses'),
+                          StatusBadge(status: currentStatus),
                         ],
                       ),
                       const SizedBox(height: 24),
@@ -147,11 +169,11 @@ class _ApplicantDetailScreenState extends ConsumerState<ApplicantDetailScreen> {
                         ],
                       ),
                       const SizedBox(height: 12),
-                      _documentItem(context, LucideIcons.fileText, 'Curriculum Vitae (CV Pelamar)', 'cv-vidar.pdf', 'https://storage.supabase.co/documents/cv-vidar.pdf'),
+                      _documentItem(context, LucideIcons.fileText, 'Curriculum Vitae (CV Pelamar)', app?.cvUrl.split('/').last ?? 'cv-vidar.pdf', app?.cvUrl ?? ''),
                       const SizedBox(height: 10),
-                      _documentItem(context, LucideIcons.mail, 'Surat Pengantar Magang Kampus', 'surat-kampus.pdf', 'https://storage.supabase.co/documents/surat-kampus.pdf'),
+                      _documentItem(context, LucideIcons.mail, 'Surat Pengantar Magang Kampus', app?.suratPengantarUrl?.split('/').last ?? 'surat-kampus.pdf', app?.suratPengantarUrl ?? ''),
                       const SizedBox(height: 10),
-                      _documentItem(context, LucideIcons.globe, 'Portofolio Online & Proyek GitHub', 'github.com/vidar', 'https://github.com/vidar'),
+                      _documentItem(context, LucideIcons.globe, 'Portofolio Online & Proyek GitHub', app?.portofolioUrl ?? 'github.com/vidar', app?.portofolioUrl ?? ''),
                     ],
                   ),
                 ),

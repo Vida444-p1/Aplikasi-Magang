@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:intl/intl.dart';
 import '../../core/theme/app_theme.dart';
+import '../../core/utils/pdf_export_helper.dart';
 import '../../models/activity_model.dart';
 import '../../providers/activity_provider.dart';
 import '../../widgets/responsive_scaffold.dart';
@@ -16,6 +17,224 @@ class InternMonitoringScreen extends ConsumerStatefulWidget {
 }
 
 class _InternMonitoringScreenState extends ConsumerState<InternMonitoringScreen> {
+  void _openEvaluationDialog() {
+    double disiplin = 90;
+    double teknis = 92;
+    double softSkill = 88;
+    final catatanCtrl = TextEditingController(
+      text: 'Mahasiswa menunjukkan etos kerja yang sangat baik, cepat beradaptasi dengan stack Flutter & Supabase, dan proaktif dalam tim.',
+    );
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setDialogState) {
+          final nilaiAkhir = (disiplin * 0.3 + teknis * 0.4 + softSkill * 0.3).round();
+          final predikat = nilaiAkhir >= 85
+              ? 'Sangat Memuaskan (A)'
+              : (nilaiAkhir >= 75 ? 'Memuaskan (B+)' : 'Cukup (B)');
+
+          return Dialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            child: Container(
+              width: 560,
+              padding: const EdgeInsets.all(28),
+              decoration: BoxDecoration(
+                color: AppTheme.surface(context),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(10),
+                              decoration: BoxDecoration(
+                                color: Colors.amber.withValues(alpha: 0.15),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: const Icon(LucideIcons.award, color: Colors.amber, size: 22),
+                            ),
+                            const SizedBox(width: 12),
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Evaluasi & Sertifikat Magang',
+                                  style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700, color: AppTheme.text(context)),
+                                ),
+                                Text(
+                                  'Peserta: Vida Rizki Prasetyo (NIM: 25523013)',
+                                  style: TextStyle(fontSize: 12.5, color: AppTheme.mutedText(context)),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                        IconButton(
+                          onPressed: () => Navigator.pop(ctx),
+                          icon: Icon(LucideIcons.x, size: 18, color: AppTheme.mutedText(context)),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 20),
+
+                    // Rangkuman Nilai Akhir Card
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            AppTheme.primary.withValues(alpha: 0.1),
+                            AppTheme.primaryLight.withValues(alpha: 0.05),
+                          ],
+                        ),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: AppTheme.primary.withValues(alpha: 0.2)),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('Nilai Evaluasi Akhir:', style: TextStyle(fontSize: 12, color: AppTheme.mutedText(context))),
+                              const SizedBox(height: 4),
+                              Text('$nilaiAkhir / 100', style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: AppTheme.primary)),
+                            ],
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: AppTheme.success.withValues(alpha: 0.15),
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Text(
+                              'Predikat: $predikat',
+                              style: const TextStyle(fontWeight: FontWeight.bold, color: AppTheme.success, fontSize: 12.5),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 18),
+
+                    // Slider 1: Kedisiplinan
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text('1. Kedisiplinan & Presensi (30%)', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: AppTheme.text(context))),
+                        Text('${disiplin.toInt()} / 100', style: const TextStyle(fontWeight: FontWeight.bold, color: AppTheme.primary)),
+                      ],
+                    ),
+                    Slider(
+                      value: disiplin,
+                      min: 50,
+                      max: 100,
+                      divisions: 50,
+                      onChanged: (val) => setDialogState(() => disiplin = val),
+                    ),
+                    const SizedBox(height: 8),
+
+                    // Slider 2: Teknis
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text('2. Keterampilan Teknis (Hard Skill) (40%)', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: AppTheme.text(context))),
+                        Text('${teknis.toInt()} / 100', style: const TextStyle(fontWeight: FontWeight.bold, color: AppTheme.primary)),
+                      ],
+                    ),
+                    Slider(
+                      value: teknis,
+                      min: 50,
+                      max: 100,
+                      divisions: 50,
+                      onChanged: (val) => setDialogState(() => teknis = val),
+                    ),
+                    const SizedBox(height: 8),
+
+                    // Slider 3: Soft Skill
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text('3. Komunikasi & Kerjasama (Soft Skill) (30%)', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: AppTheme.text(context))),
+                        Text('${softSkill.toInt()} / 100', style: const TextStyle(fontWeight: FontWeight.bold, color: AppTheme.primary)),
+                      ],
+                    ),
+                    Slider(
+                      value: softSkill,
+                      min: 50,
+                      max: 100,
+                      divisions: 50,
+                      onChanged: (val) => setDialogState(() => softSkill = val),
+                    ),
+                    const SizedBox(height: 14),
+
+                    Text('Catatan Evaluasi / Rekomendasi Mentor:', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: AppTheme.text(context))),
+                    const SizedBox(height: 6),
+                    TextField(
+                      controller: catatanCtrl,
+                      maxLines: 3,
+                      decoration: const InputDecoration(
+                        hintText: 'Tuliskan catatan apresiasi, saran pengembangan...',
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(ctx),
+                          child: const Text('Tutup'),
+                        ),
+                        const SizedBox(width: 8),
+                        ElevatedButton.icon(
+                          onPressed: () async {
+                            Navigator.pop(ctx);
+                            await PdfExportHelper.exportCertificatePdf(
+                              namaMahasiswa: 'Vida Rizki Prasetyo',
+                              namaPerusahaan: 'PT Teknologi Nusantara Digital',
+                              posisiMagang: 'Flutter & Mobile Developer Intern',
+                              durasiBulan: '6',
+                              nilaiAkhir: nilaiAkhir.toString(),
+                              predikat: predikat,
+                              tanggalSelesai: DateFormat('dd MMMM yyyy').format(DateTime.now()),
+                            );
+                            if (mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Sertifikat Magang Digital berhasil diterbitkan!'),
+                                  backgroundColor: AppTheme.success,
+                                ),
+                              );
+                            }
+                          },
+                          icon: const Icon(LucideIcons.award, size: 16),
+                          label: const Text('Simpan & Cetak Sertifikat (PDF)'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppTheme.primary,
+                            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
   void _openFeedbackDialog(ActivityModel act) {
     final feedbackCtrl = TextEditingController(text: act.catatanPembimbing ?? '');
 
@@ -178,24 +397,40 @@ class _InternMonitoringScreenState extends ConsumerState<InternMonitoringScreen>
                     ],
                   ),
                 ),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: AppTheme.success.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: AppTheme.success.withValues(alpha: 0.25)),
-                  ),
-                  child: const Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(LucideIcons.activity, size: 15, color: AppTheme.success),
-                      SizedBox(width: 8),
-                      Text(
-                        'Status: Monitoring Aktif',
-                        style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600, color: AppTheme.success),
+                Wrap(
+                  spacing: 10,
+                  runSpacing: 10,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: [
+                    ElevatedButton.icon(
+                      onPressed: _openEvaluationDialog,
+                      icon: const Icon(LucideIcons.award, size: 15),
+                      label: const Text('Evaluasi & Sertifikat Magang'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppTheme.primary,
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                       ),
-                    ],
-                  ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: AppTheme.success.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: AppTheme.success.withValues(alpha: 0.25)),
+                      ),
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(LucideIcons.activity, size: 15, color: AppTheme.success),
+                          SizedBox(width: 8),
+                          Text(
+                            'Status: Monitoring Aktif',
+                            style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600, color: AppTheme.success),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
