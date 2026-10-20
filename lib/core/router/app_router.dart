@@ -19,6 +19,7 @@ import '../../views/admin/admin_users_screen.dart';
 import '../../views/admin/admin_vacancies_screen.dart';
 import '../../views/admin/admin_monitoring_screen.dart';
 import '../../views/common/notifications_screen.dart';
+import '../../views/common/ml_insights_screen.dart';
 
 final appRouter = GoRouter(
   initialLocation: '/login',
@@ -116,6 +117,10 @@ final appRouter = GoRouter(
     GoRoute(
       path: '/notifikasi',
       builder: (context, state) => const NotificationsScreen(),
+    ),
+    GoRoute(
+      path: '/ai-insights',
+      builder: (context, state) => const MLInsightsScreen(),
     ),
   ],
 );
