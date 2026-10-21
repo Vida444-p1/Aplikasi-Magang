@@ -8,6 +8,7 @@ import '../../providers/vacancy_provider.dart';
 import '../../widgets/responsive_scaffold.dart';
 import '../../widgets/stat_card.dart';
 import '../../widgets/status_badge.dart';
+import '../../widgets/ml/perusahaan_ai_card.dart';
 
 class PerusahaanDashboardScreen extends ConsumerWidget {
   const PerusahaanDashboardScreen({super.key});
@@ -171,6 +172,8 @@ class PerusahaanDashboardScreen extends ConsumerWidget {
                 );
               },
             ),
+            const SizedBox(height: 24),
+            const PerusahaanAICard(),
             const SizedBox(height: 24),
 
             // Active Vacancies Overview Container

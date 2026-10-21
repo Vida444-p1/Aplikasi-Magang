@@ -227,7 +227,6 @@ class AppSidebar extends ConsumerWidget {
     if (role == 'peserta') {
       return [
         _menuTile(context, LucideIcons.layoutDashboard, 'Dashboard', '/peserta/dashboard'),
-        _menuTile(context, LucideIcons.sparkles, 'AI & ML Insights', '/ai-insights'),
         _menuTile(context, LucideIcons.search, 'Cari Lowongan', '/peserta/lowongan'),
         _menuTile(context, LucideIcons.fileCheck, 'Lamaran Saya', '/peserta/pendaftaran'),
         _menuTile(context, LucideIcons.calendarCheck, 'Logbook Kegiatan', '/peserta/kegiatan'),
@@ -237,7 +236,6 @@ class AppSidebar extends ConsumerWidget {
     } else if (role == 'perusahaan') {
       return [
         _menuTile(context, LucideIcons.layoutDashboard, 'Dashboard', '/perusahaan/dashboard'),
-        _menuTile(context, LucideIcons.sparkles, 'AI & ML Insights', '/ai-insights'),
         _menuTile(context, LucideIcons.briefcase, 'Kelola Lowongan', '/perusahaan/lowongan'),
         _menuTile(context, LucideIcons.users, 'Data Pendaftar', '/perusahaan/pelamar'),
         _menuTile(context, LucideIcons.activity, 'Monitoring Peserta', '/perusahaan/monitoring'),
@@ -246,7 +244,6 @@ class AppSidebar extends ConsumerWidget {
     } else {
       return [
         _menuTile(context, LucideIcons.layoutDashboard, 'Dashboard Admin', '/admin/dashboard'),
-        _menuTile(context, LucideIcons.sparkles, 'AI & ML Insights', '/ai-insights'),
         _menuTile(context, LucideIcons.users, 'Manajemen Pengguna', '/admin/users'),
         _menuTile(context, LucideIcons.building, 'Manajemen Lowongan', '/admin/lowongan'),
         _menuTile(context, LucideIcons.clipboardList, 'Monitoring Logbook', '/admin/monitoring'),

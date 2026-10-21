@@ -14,6 +14,7 @@ class MLInsightsScreen extends ConsumerStatefulWidget {
 
 class _MLInsightsScreenState extends ConsumerState<MLInsightsScreen> with SingleTickerProviderStateMixin {
   late TabController _tabController;
+  String _selectedRoleFilter = 'all';
 
   // 1. Linear Regression State
   int _lrDurasi = 4;
@@ -61,6 +62,22 @@ class _MLInsightsScreenState extends ConsumerState<MLInsightsScreen> with Single
   void initState() {
     super.initState();
     _tabController = TabController(length: 5, vsync: this);
+    _tabController.addListener(() {
+      if (!_tabController.indexIsChanging) {
+        setState(() {
+          final idx = _tabController.index;
+          if (idx == 0) {
+            _selectedRoleFilter = 'all';
+          } else if (idx == 1 || idx == 2) {
+            _selectedRoleFilter = 'mahasiswa';
+          } else if (idx == 3) {
+            _selectedRoleFilter = 'koordinator';
+          } else if (idx == 4) {
+            _selectedRoleFilter = 'perusahaan';
+          }
+        });
+      }
+    });
     // Initial fetch on mount
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _runComprehensive();
@@ -171,7 +188,12 @@ class _MLInsightsScreenState extends ConsumerState<MLInsightsScreen> with Single
             // Top Hero Banner
             _buildHeroBanner(context, isBackendOnline, isMobile),
 
-            const SizedBox(height: 20),
+            const SizedBox(height: 16),
+
+            // Role / Job Filter Bar
+            _buildRoleFilterBar(context),
+
+            const SizedBox(height: 16),
 
             // Tab Bar
             Container(
@@ -190,11 +212,11 @@ class _MLInsightsScreenState extends ConsumerState<MLInsightsScreen> with Single
                 unselectedLabelColor: AppTheme.mutedText(context),
                 labelStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
                 tabs: const [
-                  Tab(icon: Icon(LucideIcons.layoutGrid, size: 16), text: 'Ringkasan Eksekutif'),
-                  Tab(icon: Icon(LucideIcons.trendingUp, size: 16), text: '1. Linear Regression'),
-                  Tab(icon: Icon(LucideIcons.checkCircle2, size: 16), text: '2. Logistic Regression'),
-                  Tab(icon: Icon(LucideIcons.messageSquareText, size: 16), text: '3. Naive Bayes'),
-                  Tab(icon: Icon(LucideIcons.shieldCheck, size: 16), text: '4. Support Vector Machine'),
+                  Tab(icon: Icon(LucideIcons.layoutGrid, size: 16), text: 'Semua (Ringkasan Eksekutif)'),
+                  Tab(icon: Icon(LucideIcons.trendingUp, size: 16), text: '1. Prediksi Uang Saku [Mahasiswa]'),
+                  Tab(icon: Icon(LucideIcons.checkCircle2, size: 16), text: '2. Peluang Lolos Seleksi [Mahasiswa]'),
+                  Tab(icon: Icon(LucideIcons.messageSquareText, size: 16), text: '3. Klasifikasi & Sentimen [Koordinator]'),
+                  Tab(icon: Icon(LucideIcons.shieldCheck, size: 16), text: '4. Evaluasi Kecocokan [Perusahaan]'),
                 ],
               ),
             ),
@@ -203,7 +225,7 @@ class _MLInsightsScreenState extends ConsumerState<MLInsightsScreen> with Single
 
             // Tab Content
             SizedBox(
-              height: 750,
+              height: 900,
               child: TabBarView(
                 controller: _tabController,
                 children: [
@@ -339,15 +361,25 @@ class _MLInsightsScreenState extends ConsumerState<MLInsightsScreen> with Single
       child: Column(
         children: [
           const SizedBox(height: 8),
-          // 4 Algorithm Cards Grid
+          // 1. ROLE MAHASISWA SECTION
+          _buildRoleSectionHeader(
+            context,
+            title: 'Job Mahasiswa (Persiapan & Pengajuan Magang)',
+            subtitle: 'Fitur pendukung calon peserta untuk riset kompensasi dan evaluasi diri sebelum melamar',
+            icon: LucideIcons.graduationCap,
+            color: const Color(0xFF2563EB),
+          ),
+          const SizedBox(height: 10),
           Wrap(
             spacing: 16,
             runSpacing: 16,
             children: [
               _buildMiniCard(
                 context,
-                title: 'Linear Regression',
-                subtitle: 'Prediksi Uang Saku',
+                title: 'Prediksi Uang Saku',
+                subtitle: 'Linear Regression',
+                roleTag: 'Mahasiswa',
+                roleColor: const Color(0xFF2563EB),
                 value: lr?['formatted_stipend'] ?? 'Rp 4.500.000',
                 detail: 'Rekomendasi stipend bulanan',
                 icon: LucideIcons.trendingUp,
@@ -355,30 +387,72 @@ class _MLInsightsScreenState extends ConsumerState<MLInsightsScreen> with Single
               ),
               _buildMiniCard(
                 context,
-                title: 'Logistic Regression',
-                subtitle: 'Peluang Lolos Seleksi',
+                title: 'Peluang Lolos Seleksi',
+                subtitle: 'Logistic Regression',
+                roleTag: 'Mahasiswa',
+                roleColor: const Color(0xFF2563EB),
                 value: '${log?['percentage'] ?? 88.5}% (${log?['status'] ?? 'Diterima'})',
                 detail: 'Probabilitas kelolosan seleksi',
                 icon: LucideIcons.checkCircle2,
                 color: (log?['status'] == 'Diterima') ? AppTheme.success : AppTheme.danger,
               ),
+            ],
+          ),
+
+          const SizedBox(height: 20),
+
+          // 2. ROLE MITRA INDUSTRI / PERUSAHAAN SECTION
+          _buildRoleSectionHeader(
+            context,
+            title: 'Job Mitra Perusahaan (Screening & Rekrutmen Pelamar)',
+            subtitle: 'Fitur pendukung tim HR industri untuk menyaring dan memeringkat kandidat terbaik',
+            icon: LucideIcons.building2,
+            color: const Color(0xFF10B981),
+          ),
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 16,
+            runSpacing: 16,
+            children: [
               _buildMiniCard(
                 context,
-                title: 'Naive Bayes (NLP)',
-                subtitle: 'Klasifikasi Domain & Sentimen',
-                value: nb?['bidang_minat']?['predicted_domain'] ?? 'Mobile Dev',
-                detail: 'Sentimen Logbook: ${nb?['analisis_logbook']?['sentiment'] ?? 'Positif'}',
-                icon: LucideIcons.messageSquareText,
-                color: const Color(0xFF8B5CF6),
-              ),
-              _buildMiniCard(
-                context,
-                title: 'SVM (Support Vector)',
-                subtitle: 'Peringkat Kecocokan',
+                title: 'Evaluasi Kecocokan',
+                subtitle: 'Support Vector Machine',
+                roleTag: 'Mitra Industri',
+                roleColor: const Color(0xFF10B981),
                 value: svm?['match_tier'] ?? 'Sangat Cocok',
                 detail: 'Confidence: ${( (svm?['confidence'] ?? 0.95) * 100).toStringAsFixed(1)}%',
                 icon: LucideIcons.shieldCheck,
                 color: const Color(0xFF10B981),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 20),
+
+          // 3. ROLE KOORDINATOR KAMPUS SECTION
+          _buildRoleSectionHeader(
+            context,
+            title: 'Job Koordinator Kampus (Monitoring & Evaluasi Bimbingan)',
+            subtitle: 'Fitur pemantauan otomatis catatan kegiatan logbook dan sentimen kendala mahasiswa',
+            icon: LucideIcons.userCheck,
+            color: const Color(0xFF8B5CF6),
+          ),
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 16,
+            runSpacing: 16,
+            children: [
+              _buildMiniCard(
+                context,
+                title: 'Klasifikasi & Sentimen',
+                subtitle: 'Naive Bayes (NLP)',
+                roleTag: 'Koordinator',
+                roleColor: const Color(0xFF8B5CF6),
+                value: nb?['bidang_minat']?['predicted_domain'] ?? 'Mobile Dev',
+                detail: 'Sentimen Logbook: ${nb?['analisis_logbook']?['sentiment'] ?? 'Positif'}',
+                icon: LucideIcons.messageSquareText,
+                color: const Color(0xFF8B5CF6),
               ),
             ],
           ),
@@ -429,22 +503,22 @@ class _MLInsightsScreenState extends ConsumerState<MLInsightsScreen> with Single
                 const SizedBox(height: 12),
                 _buildInsightBullet(
                   context,
-                  title: '1. Model Regresi Linear (Uang Saku):',
+                  title: '1. [Job Mahasiswa] Prediksi Uang Saku (Linear Regression):',
                   body: lr?['analysis'] ?? 'Kandidat diprediksi layak menerima stipend optimal berbasis jam kerja dan industri.',
                 ),
                 _buildInsightBullet(
                   context,
-                  title: '2. Model Regresi Logistik (Peluang Lolos):',
+                  title: '2. [Job Mahasiswa] Peluang Lolos Seleksi (Logistic Regression):',
                   body: 'Prediksi status [${log?['status']}] dengan tingkat keyakinan ${log?['percentage']}%. Rekomendasi: ${(log?['recommendation'] as List?)?.join(", ") ?? "Lolos kualifikasi utama."}',
                 ),
                 _buildInsightBullet(
                   context,
-                  title: '3. Model Naive Bayes (NLP & Sentimen):',
+                  title: '3. [Job Koordinator] Klasifikasi Minat & Sentimen Logbook (Naive Bayes):',
                   body: 'Spesialisasi terdeteksi: ${nb?['bidang_minat']?['predicted_domain']}. Analisis jurnal harian terakhir: "${nb?['analisis_logbook']?['sentiment']}" — ${nb?['analisis_logbook']?['advice'] ?? ""}',
                 ),
                 _buildInsightBullet(
                   context,
-                  title: '4. Model Support Vector Machine (Pencocokan):',
+                  title: '4. [Job Mitra Perusahaan] Evaluasi Kecocokan Kandidat (SVM):',
                   body: svm?['summary'] ?? 'Kandidat berada dalam margin kelas Sangat Cocok.',
                 ),
               ],
@@ -463,9 +537,12 @@ class _MLInsightsScreenState extends ConsumerState<MLInsightsScreen> with Single
         children: [
           _buildAlgoHeader(
             context,
-            title: 'Linear Regression (Regresi Linear)',
+            title: 'Prediksi Uang Saku (Linear Regression)',
             purpose: 'Memprediksi nilai numerik kontinu: Estimasi Uang Saku / Salary Magang',
             formula: 'Y = β₀ + β₁(Durasi) + β₂(Jam/Minggu) + β₃(Skills) + β₄(Industri) + β₅(Sistem Kerja) + ε',
+            roleTag: 'JOB MAHASISWA (PERENCANAAN & EKSPLORASI)',
+            roleIcon: LucideIcons.graduationCap,
+            roleColor: const Color(0xFF2563EB),
           ),
           const SizedBox(height: 16),
           // Interactive Sliders & Controls
@@ -495,7 +572,7 @@ class _MLInsightsScreenState extends ConsumerState<MLInsightsScreen> with Single
                   children: [
                     Expanded(
                       child: DropdownButtonFormField<String>(
-                        value: _lrIndustri,
+                        initialValue: _lrIndustri,
                         decoration: const InputDecoration(labelText: 'Industri Perusahaan', border: OutlineInputBorder()),
                         items: const [
                           DropdownMenuItem(value: 'Pendidikan', child: Text('Pendidikan / Yayasan')),
@@ -508,7 +585,7 @@ class _MLInsightsScreenState extends ConsumerState<MLInsightsScreen> with Single
                     const SizedBox(width: 14),
                     Expanded(
                       child: DropdownButtonFormField<String>(
-                        value: _lrTipe,
+                        initialValue: _lrTipe,
                         decoration: const InputDecoration(labelText: 'Sistem Kerja', border: OutlineInputBorder()),
                         items: const [
                           DropdownMenuItem(value: 'WFH', child: Text('WFH (Remote)')),
@@ -530,7 +607,7 @@ class _MLInsightsScreenState extends ConsumerState<MLInsightsScreen> with Single
                     ),
                     onPressed: _runLinearRegression,
                     icon: _lrLoading ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)) : const Icon(LucideIcons.calculator),
-                    label: const Text('Hitung Prediksi Regresi Linear'),
+                    label: const Text('Hitung Prediksi Uang Saku'),
                   ),
                 ),
               ],
@@ -587,9 +664,12 @@ class _MLInsightsScreenState extends ConsumerState<MLInsightsScreen> with Single
         children: [
           _buildAlgoHeader(
             context,
-            title: 'Logistic Regression (Regresi Logistik)',
+            title: 'Peluang Lolos Seleksi (Logistic Regression)',
             purpose: 'Klasifikasi biner & probabilitas kelulusan seleksi pelamar: Lolos (1) vs Ditolak (0)',
             formula: 'P(Y=1) = 1 / (1 + e^(-z)), di mana z = w₀ + w₁(IPK) + w₂(Jurusan) + w₃(Skills) + w₄(Portofolio)',
+            roleTag: 'JOB MAHASISWA (SELF-ASSESSMENT SEBELUM MELAMAR)',
+            roleIcon: LucideIcons.graduationCap,
+            roleColor: const Color(0xFF2563EB),
           ),
           const SizedBox(height: 16),
           Container(
@@ -698,9 +778,12 @@ class _MLInsightsScreenState extends ConsumerState<MLInsightsScreen> with Single
         children: [
           _buildAlgoHeader(
             context,
-            title: 'Multinomial Naive Bayes (NLP & Teorema Bayes)',
+            title: 'Klasifikasi Minat & Sentimen Jurnal (Naive Bayes)',
             purpose: '1. Klasifikasi kategori minat/posisi dari teks profil/CV. 2. Analisis sentimen jurnal/logbook harian.',
             formula: 'P(Kelas|Teks) ∝ P(Kelas) · ∏ P(Kata_i|Kelas)',
+            roleTag: 'JOB KOORDINATOR & DOSEN PEMBIMBING (MONITORING LOGBOOK)',
+            roleIcon: LucideIcons.userCheck,
+            roleColor: const Color(0xFF8B5CF6),
           ),
           const SizedBox(height: 16),
           // Sub-feature 1: Domain Matcher
@@ -781,9 +864,11 @@ class _MLInsightsScreenState extends ConsumerState<MLInsightsScreen> with Single
                       backgroundColor: AppTheme.primary,
                       foregroundColor: Colors.white,
                     ),
-                    onPressed: _runNaiveBayes,
-                    icon: const Icon(LucideIcons.sparkle),
-                    label: const Text('Jalankan Klasifikasi Naive Bayes'),
+                    onPressed: _nbLoading ? null : _runNaiveBayes,
+                    icon: _nbLoading
+                        ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                        : const Icon(LucideIcons.sparkle),
+                    label: const Text('Analisis Klasifikasi & Sentimen'),
                   ),
                 ),
                 if (_nbSentimentResult != null) ...[
@@ -833,9 +918,12 @@ class _MLInsightsScreenState extends ConsumerState<MLInsightsScreen> with Single
         children: [
           _buildAlgoHeader(
             context,
-            title: 'Support Vector Machine (SVM)',
+            title: 'Evaluasi Kecocokan Kandidat (Support Vector Machine)',
             purpose: 'Evaluasi Kecocokan Multidimensi & Margin Hyperplane: Sangat Cocok, Cukup Sesuai, atau Kurang Sesuai',
             formula: 'f(x) = sign(∑ α_i · y_i · K(x_i, x) + b), Kernel RBF: K(x, x\') = exp(-γ ||x - x\'||²)',
+            roleTag: 'JOB MITRA INDUSTRI / PERUSAHAAN (SCREENING REKRUTMEN)',
+            roleIcon: LucideIcons.building2,
+            roleColor: const Color(0xFF10B981),
           ),
           const SizedBox(height: 16),
           Container(
@@ -872,7 +960,7 @@ class _MLInsightsScreenState extends ConsumerState<MLInsightsScreen> with Single
                     ),
                     onPressed: _runSVM,
                     icon: _svmLoading ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)) : const Icon(LucideIcons.shieldCheck),
-                    label: const Text('Hitung Klasifikasi SVM'),
+                    label: const Text('Hitung Evaluasi Kecocokan'),
                   ),
                 ),
               ],
@@ -925,7 +1013,177 @@ class _MLInsightsScreenState extends ConsumerState<MLInsightsScreen> with Single
   }
 
   // WIDGET HELPERS
-  Widget _buildAlgoHeader(BuildContext context, {required String title, required String purpose, required String formula}) {
+  Widget _buildRoleFilterBar(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        color: AppTheme.surface(context),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppTheme.border(context)),
+      ),
+      child: Wrap(
+        spacing: 8,
+        runSpacing: 8,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        children: [
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(LucideIcons.briefcase, size: 15, color: AppTheme.primary),
+              const SizedBox(width: 6),
+              Text(
+                'Pilah Sesuai Job / Role:',
+                style: TextStyle(
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w700,
+                  color: AppTheme.text(context),
+                ),
+              ),
+            ],
+          ),
+          _buildRoleFilterChip(
+            context,
+            label: 'Semua Job (5)',
+            roleId: 'all',
+            icon: LucideIcons.layoutGrid,
+            targetTabIndex: 0,
+          ),
+          _buildRoleFilterChip(
+            context,
+            label: '🎓 Job Mahasiswa (2)',
+            roleId: 'mahasiswa',
+            icon: LucideIcons.graduationCap,
+            color: const Color(0xFF2563EB),
+            targetTabIndex: 1,
+          ),
+          _buildRoleFilterChip(
+            context,
+            label: '🏢 Job Mitra Perusahaan (1)',
+            roleId: 'perusahaan',
+            icon: LucideIcons.building2,
+            color: const Color(0xFF10B981),
+            targetTabIndex: 4,
+          ),
+          _buildRoleFilterChip(
+            context,
+            label: '👨‍🏫 Job Koordinator Kampus (1)',
+            roleId: 'koordinator',
+            icon: LucideIcons.userCheck,
+            color: const Color(0xFF8B5CF6),
+            targetTabIndex: 3,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRoleFilterChip(
+    BuildContext context, {
+    required String label,
+    required String roleId,
+    required IconData icon,
+    required int targetTabIndex,
+    Color? color,
+  }) {
+    final isSelected = _selectedRoleFilter == roleId;
+    final activeColor = color ?? AppTheme.primary;
+
+    return InkWell(
+      onTap: () {
+        setState(() {
+          _selectedRoleFilter = roleId;
+        });
+        _tabController.animateTo(targetTabIndex);
+      },
+      borderRadius: BorderRadius.circular(20),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color: isSelected ? activeColor : activeColor.withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: isSelected ? activeColor : activeColor.withValues(alpha: 0.25),
+            width: isSelected ? 1.5 : 1,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              icon,
+              size: 13,
+              color: isSelected ? Colors.white : activeColor,
+            ),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
+                color: isSelected ? Colors.white : activeColor,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildRoleSectionHeader(
+    BuildContext context, {
+    required String title,
+    required String subtitle,
+    required IconData icon,
+    required Color color,
+  }) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Container(
+          padding: const EdgeInsets.all(6),
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: 0.14),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Icon(icon, color: color, size: 16),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w800,
+                  color: AppTheme.text(context),
+                ),
+              ),
+              Text(
+                subtitle,
+                style: TextStyle(
+                  fontSize: 11.5,
+                  color: AppTheme.mutedText(context),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildAlgoHeader(
+    BuildContext context, {
+    required String title,
+    required String purpose,
+    required String formula,
+    String? roleTag,
+    IconData? roleIcon,
+    Color? roleColor,
+  }) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -936,6 +1194,33 @@ class _MLInsightsScreenState extends ConsumerState<MLInsightsScreen> with Single
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          if (roleTag != null) ...[
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                color: (roleColor ?? AppTheme.primary).withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: (roleColor ?? AppTheme.primary).withValues(alpha: 0.3)),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(roleIcon ?? LucideIcons.badgeCheck, size: 14, color: roleColor ?? AppTheme.primary),
+                  const SizedBox(width: 6),
+                  Text(
+                    roleTag,
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      color: roleColor ?? AppTheme.primary,
+                      letterSpacing: 0.3,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 8),
+          ],
           Text(title, style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: AppTheme.text(context))),
           const SizedBox(height: 4),
           Text(purpose, style: TextStyle(fontSize: 13, color: AppTheme.textSecondary(context))),
@@ -973,6 +1258,8 @@ class _MLInsightsScreenState extends ConsumerState<MLInsightsScreen> with Single
     required String detail,
     required IconData icon,
     required Color color,
+    String? roleTag,
+    Color? roleColor,
   }) {
     return Container(
       width: 280,
@@ -1008,6 +1295,23 @@ class _MLInsightsScreenState extends ConsumerState<MLInsightsScreen> with Single
                   ],
                 ),
               ),
+              if (roleTag != null) ...[
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: (roleColor ?? color).withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Text(
+                    roleTag,
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w700,
+                      color: roleColor ?? color,
+                    ),
+                  ),
+                ),
+              ],
             ],
           ),
           const SizedBox(height: 14),

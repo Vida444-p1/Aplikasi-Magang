@@ -10,6 +10,7 @@ import '../../providers/application_provider.dart';
 import '../../widgets/responsive_scaffold.dart';
 import '../../widgets/stat_card.dart';
 import '../../widgets/status_badge.dart';
+import '../../widgets/ml/peserta_ai_card.dart';
 
 class PesertaDashboardScreen extends ConsumerWidget {
   const PesertaDashboardScreen({super.key});
@@ -282,6 +283,8 @@ class PesertaDashboardScreen extends ConsumerWidget {
                 );
               },
             ),
+            const SizedBox(height: 24),
+            const PesertaAICard(),
             const SizedBox(height: 24),
 
             // Two-column layout for Recent Activities & Active Applications

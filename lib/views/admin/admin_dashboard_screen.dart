@@ -5,6 +5,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../core/theme/app_theme.dart';
 import '../../widgets/responsive_scaffold.dart';
 import '../../widgets/stat_card.dart';
+import '../../widgets/ml/admin_ai_card.dart';
 
 class AdminDashboardScreen extends ConsumerWidget {
   const AdminDashboardScreen({super.key});
@@ -143,6 +144,8 @@ class AdminDashboardScreen extends ConsumerWidget {
                 );
               },
             ),
+            const SizedBox(height: 24),
+            const AdminAICard(),
             const SizedBox(height: 24),
 
             // Admin Quick Actions & Monitoring Shortcuts
