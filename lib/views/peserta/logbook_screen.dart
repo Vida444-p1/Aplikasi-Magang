@@ -164,6 +164,7 @@ class _LogbookScreenState extends ConsumerState<LogbookScreen> {
                       Text('Status Kegiatan', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.text(context))),
                       const SizedBox(height: 6),
                       DropdownButtonFormField<String>(
+                        isExpanded: true,
                         initialValue: selectedStatus,
                         decoration: InputDecoration(
                           contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
@@ -179,8 +180,8 @@ class _LogbookScreenState extends ConsumerState<LogbookScreen> {
                           ),
                         ),
                         items: const [
-                          DropdownMenuItem(value: 'selesai', child: Text('Selesai Dikerjakan')),
-                          DropdownMenuItem(value: 'berjalan', child: Text('Sedang Berjalan (In Progress)')),
+                          DropdownMenuItem(value: 'selesai', child: Text('Selesai Dikerjakan', overflow: TextOverflow.ellipsis)),
+                          DropdownMenuItem(value: 'berjalan', child: Text('Sedang Berjalan (In Progress)', overflow: TextOverflow.ellipsis)),
                         ],
                         onChanged: (val) {
                           if (val != null) setDialogState(() => selectedStatus = val);

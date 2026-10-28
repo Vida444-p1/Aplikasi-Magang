@@ -73,7 +73,10 @@ class _PerusahaanAICardState extends ConsumerState<PerusahaanAICard> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
+                    Wrap(
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      spacing: 8,
+                      runSpacing: 4,
                       children: [
                         Text(
                           'AI Smart Candidate Matcher',
@@ -84,7 +87,6 @@ class _PerusahaanAICardState extends ConsumerState<PerusahaanAICard> {
                             letterSpacing: -0.3,
                           ),
                         ),
-                        const SizedBox(width: 8),
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
                           decoration: BoxDecoration(
@@ -120,7 +122,7 @@ class _PerusahaanAICardState extends ConsumerState<PerusahaanAICard> {
           isMobile
               ? Column(
                   children: [
-                    _buildControls(),
+                    _buildControls(isMobile),
                     const SizedBox(height: 14),
                     _buildResultBox(context),
                   ],
@@ -128,7 +130,7 @@ class _PerusahaanAICardState extends ConsumerState<PerusahaanAICard> {
               : Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Expanded(flex: 3, child: _buildControls()),
+                    Expanded(flex: 3, child: _buildControls(isMobile)),
                     const SizedBox(width: 20),
                     Expanded(flex: 2, child: _buildResultBox(context)),
                   ],
@@ -138,37 +140,41 @@ class _PerusahaanAICardState extends ConsumerState<PerusahaanAICard> {
     );
   }
 
-  Widget _buildControls() {
+  Widget _buildControls(bool isMobile) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _buildSliderRow('Kesesuaian Skill:', '${_svmSkillMatch.round()}%', _svmSkillMatch, 30, 100, (v) {
           setState(() => _svmSkillMatch = v.roundToDouble());
-        }),
+        }, isMobile: isMobile),
         _buildSliderRow('Tes Teknis / Kuis:', '${_svmTeknis.round()}%', _svmTeknis, 30, 100, (v) {
           setState(() => _svmTeknis = v.roundToDouble());
-        }),
+        }, isMobile: isMobile),
         _buildSliderRow('Wawancara / Soft-skill:', '${_svmWawancara.round()}%', _svmWawancara, 30, 100, (v) {
           setState(() => _svmWawancara = v.roundToDouble());
-        }),
+        }, isMobile: isMobile),
         _buildSliderRow('Jumlah Proyek:', '$_svmProyek Proyek', _svmProyek.toDouble(), 0, 8, (v) {
           setState(() => _svmProyek = v.round());
-        }),
+        }, isMobile: isMobile),
         _buildSliderRow('IPK Pelamar:', _svmIpk.toStringAsFixed(2), _svmIpk, 2.0, 4.0, (v) {
           setState(() => _svmIpk = double.parse(v.toStringAsFixed(2)));
-        }),
+        }, isMobile: isMobile),
         const SizedBox(height: 10),
-        ElevatedButton.icon(
-          onPressed: _svmLoading ? null : _runSVM,
-          style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFF10B981),
-            foregroundColor: Colors.white,
-            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 11),
+        SizedBox(
+          width: isMobile ? double.infinity : null,
+          child: ElevatedButton.icon(
+            onPressed: _svmLoading ? null : _runSVM,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF10B981),
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            ),
+            icon: _svmLoading
+                ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                : const Icon(LucideIcons.shieldCheck, size: 15),
+            label: const Text('Hitung Evaluasi Kecocokan (SVM)', style: TextStyle(fontWeight: FontWeight.w700)),
           ),
-          icon: _svmLoading
-              ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-              : const Icon(LucideIcons.shieldCheck, size: 15),
-          label: const Text('Hitung Evaluasi Kecocokan (SVM)'),
         ),
       ],
     );
@@ -251,13 +257,13 @@ class _PerusahaanAICardState extends ConsumerState<PerusahaanAICard> {
     );
   }
 
-  Widget _buildSliderRow(String label, String valueStr, double value, double min, double max, ValueChanged<double> onChanged) {
+  Widget _buildSliderRow(String label, String valueStr, double value, double min, double max, ValueChanged<double> onChanged, {bool isMobile = false}) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 6),
       child: Row(
         children: [
           SizedBox(
-            width: 155,
+            width: isMobile ? 130 : 155,
             child: Text('$label $valueStr', style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600)),
           ),
           Expanded(

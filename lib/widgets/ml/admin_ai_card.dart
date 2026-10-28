@@ -79,7 +79,10 @@ class _AdminAICardState extends ConsumerState<AdminAICard> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
+                    Wrap(
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      spacing: 8,
+                      runSpacing: 4,
                       children: [
                         Text(
                           'AI Logbook & Sentiment Analytics',
@@ -90,7 +93,6 @@ class _AdminAICardState extends ConsumerState<AdminAICard> {
                             letterSpacing: -0.3,
                           ),
                         ),
-                        const SizedBox(width: 8),
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
                           decoration: BoxDecoration(
@@ -127,7 +129,7 @@ class _AdminAICardState extends ConsumerState<AdminAICard> {
               ? Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _buildInputSection(context),
+                    _buildInputSection(context, isMobile),
                     const SizedBox(height: 14),
                     _buildResultBox(context),
                   ],
@@ -135,7 +137,7 @@ class _AdminAICardState extends ConsumerState<AdminAICard> {
               : Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Expanded(flex: 3, child: _buildInputSection(context)),
+                    Expanded(flex: 3, child: _buildInputSection(context, isMobile)),
                     const SizedBox(width: 20),
                     Expanded(flex: 2, child: _buildResultBox(context)),
                   ],
@@ -145,7 +147,7 @@ class _AdminAICardState extends ConsumerState<AdminAICard> {
     );
   }
 
-  Widget _buildInputSection(BuildContext context) {
+  Widget _buildInputSection(BuildContext context, bool isMobile) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -181,17 +183,21 @@ class _AdminAICardState extends ConsumerState<AdminAICard> {
           ],
         ),
         const SizedBox(height: 10),
-        ElevatedButton.icon(
-          onPressed: _loading ? null : _runAnalysis,
-          style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFF8B5CF6),
-            foregroundColor: Colors.white,
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        SizedBox(
+          width: isMobile ? double.infinity : null,
+          child: ElevatedButton.icon(
+            onPressed: _loading ? null : _runAnalysis,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF8B5CF6),
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            ),
+            icon: _loading
+                ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                : const Icon(LucideIcons.sparkle, size: 14),
+            label: const Text('Analisis Klasifikasi & Sentimen', style: TextStyle(fontWeight: FontWeight.w700)),
           ),
-          icon: _loading
-              ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-              : const Icon(LucideIcons.sparkle, size: 14),
-          label: const Text('Analisis Klasifikasi & Sentimen'),
         ),
       ],
     );

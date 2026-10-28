@@ -109,7 +109,10 @@ class _PesertaAICardState extends ConsumerState<PesertaAICard> with SingleTicker
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Row(
+                          Wrap(
+                            crossAxisAlignment: WrapCrossAlignment.center,
+                            spacing: 8,
+                            runSpacing: 4,
                             children: [
                               Text(
                                 'AI Assistant Mahasiswa',
@@ -120,7 +123,6 @@ class _PesertaAICardState extends ConsumerState<PesertaAICard> with SingleTicker
                                   letterSpacing: -0.3,
                                 ),
                               ),
-                              const SizedBox(width: 8),
                               Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
                                 decoration: BoxDecoration(
@@ -171,24 +173,38 @@ class _PesertaAICardState extends ConsumerState<PesertaAICard> with SingleTicker
                     tabs: const [
                       Tab(
                         iconMargin: EdgeInsets.zero,
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(LucideIcons.trendingUp, size: 14),
-                            SizedBox(width: 6),
-                            Text('1. Prediksi Uang Saku'),
-                          ],
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Padding(
+                            padding: EdgeInsets.symmetric(horizontal: 4),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(LucideIcons.trendingUp, size: 14),
+                                SizedBox(width: 6),
+                                Text('1. Prediksi Uang Saku'),
+                              ],
+                            ),
+                          ),
                         ),
                       ),
                       Tab(
                         iconMargin: EdgeInsets.zero,
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(LucideIcons.checkCircle2, size: 14),
-                            SizedBox(width: 6),
-                            Text('2. Peluang Lolos Seleksi'),
-                          ],
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Padding(
+                            padding: EdgeInsets.symmetric(horizontal: 4),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(LucideIcons.checkCircle2, size: 14),
+                                SizedBox(width: 6),
+                                Text('2. Peluang Lolos Seleksi'),
+                              ],
+                            ),
+                          ),
                         ),
                       ),
                     ],
@@ -204,7 +220,7 @@ class _PesertaAICardState extends ConsumerState<PesertaAICard> with SingleTicker
           Padding(
             padding: EdgeInsets.all(isMobile ? 16 : 20),
             child: SizedBox(
-              height: 410,
+              height: isMobile ? 470 : 410,
               child: TabBarView(
                 controller: _tabController,
                 children: [
@@ -233,71 +249,134 @@ class _PesertaAICardState extends ConsumerState<PesertaAICard> with SingleTicker
                   children: [
                     _buildSliderRow('Durasi Magang:', '$_lrDurasi Bulan', _lrDurasi.toDouble(), 1, 12, (v) {
                       setState(() => _lrDurasi = v.round());
-                    }),
+                    }, isMobile: isMobile),
                     _buildSliderRow('Jam Kerja / Minggu:', '$_lrJam Jam', _lrJam.toDouble(), 15, 45, (v) {
                       setState(() => _lrJam = v.round());
-                    }),
+                    }, isMobile: isMobile),
                     _buildSliderRow('Jumlah Skill Dikuasai:', '$_lrSkills Skill', _lrSkills.toDouble(), 1, 10, (v) {
                       setState(() => _lrSkills = v.round());
-                    }),
+                    }, isMobile: isMobile),
                   ],
                 ),
               ),
             ],
           ),
           const SizedBox(height: 8),
-          Row(
-            children: [
-              Expanded(
-                child: DropdownButtonFormField<String>(
-                  initialValue: _lrIndustri,
-                  decoration: const InputDecoration(
-                    labelText: 'Industri',
-                    isDense: true,
-                    contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                    border: OutlineInputBorder(),
+          if (isMobile) ...[
+            Row(
+              children: [
+                Expanded(
+                  child: DropdownButtonFormField<String>(
+                    isExpanded: true,
+                    initialValue: _lrIndustri,
+                    decoration: const InputDecoration(
+                      labelText: 'Industri',
+                      isDense: true,
+                      contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                      border: OutlineInputBorder(),
+                    ),
+                    items: const [
+                      DropdownMenuItem(value: 'Pendidikan', child: Text('Pendidikan', overflow: TextOverflow.ellipsis)),
+                      DropdownMenuItem(value: 'Manufaktur', child: Text('Manufaktur', overflow: TextOverflow.ellipsis)),
+                      DropdownMenuItem(value: 'Teknologi', child: Text('Teknologi', overflow: TextOverflow.ellipsis)),
+                    ],
+                    onChanged: (v) => setState(() => _lrIndustri = v!),
                   ),
-                  items: const [
-                    DropdownMenuItem(value: 'Pendidikan', child: Text('Pendidikan')),
-                    DropdownMenuItem(value: 'Manufaktur', child: Text('Manufaktur')),
-                    DropdownMenuItem(value: 'Teknologi', child: Text('Teknologi')),
-                  ],
-                  onChanged: (v) => setState(() => _lrIndustri = v!),
                 ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: DropdownButtonFormField<String>(
-                  initialValue: _lrTipe,
-                  decoration: const InputDecoration(
-                    labelText: 'Sistem Kerja',
-                    isDense: true,
-                    contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                    border: OutlineInputBorder(),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: DropdownButtonFormField<String>(
+                    isExpanded: true,
+                    initialValue: _lrTipe,
+                    decoration: const InputDecoration(
+                      labelText: 'Sistem Kerja',
+                      isDense: true,
+                      contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                      border: OutlineInputBorder(),
+                    ),
+                    items: const [
+                      DropdownMenuItem(value: 'WFH', child: Text('WFH (Remote)', overflow: TextOverflow.ellipsis)),
+                      DropdownMenuItem(value: 'Hybrid', child: Text('Hybrid', overflow: TextOverflow.ellipsis)),
+                      DropdownMenuItem(value: 'WFO', child: Text('WFO (Onsite)', overflow: TextOverflow.ellipsis)),
+                    ],
+                    onChanged: (v) => setState(() => _lrTipe = v!),
                   ),
-                  items: const [
-                    DropdownMenuItem(value: 'WFH', child: Text('WFH (Remote)')),
-                    DropdownMenuItem(value: 'Hybrid', child: Text('Hybrid')),
-                    DropdownMenuItem(value: 'WFO', child: Text('WFO (Onsite)')),
-                  ],
-                  onChanged: (v) => setState(() => _lrTipe = v!),
                 ),
-              ),
-              const SizedBox(width: 10),
-              ElevatedButton.icon(
+              ],
+            ),
+            const SizedBox(height: 10),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
                 onPressed: _lrLoading ? null : _runLinearRegression,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppTheme.primary,
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                 ),
                 icon: _lrLoading
                     ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                    : const Icon(LucideIcons.calculator, size: 14),
-                label: const Text('Hitung'),
+                    : const Icon(LucideIcons.calculator, size: 15),
+                label: const Text('Hitung Estimasi Uang Saku', style: TextStyle(fontWeight: FontWeight.w700)),
               ),
-            ],
-          ),
+            ),
+          ] else ...[
+            Row(
+              children: [
+                Expanded(
+                  child: DropdownButtonFormField<String>(
+                    isExpanded: true,
+                    initialValue: _lrIndustri,
+                    decoration: const InputDecoration(
+                      labelText: 'Industri',
+                      isDense: true,
+                      contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                      border: OutlineInputBorder(),
+                    ),
+                    items: const [
+                      DropdownMenuItem(value: 'Pendidikan', child: Text('Pendidikan', overflow: TextOverflow.ellipsis)),
+                      DropdownMenuItem(value: 'Manufaktur', child: Text('Manufaktur', overflow: TextOverflow.ellipsis)),
+                      DropdownMenuItem(value: 'Teknologi', child: Text('Teknologi', overflow: TextOverflow.ellipsis)),
+                    ],
+                    onChanged: (v) => setState(() => _lrIndustri = v!),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: DropdownButtonFormField<String>(
+                    isExpanded: true,
+                    initialValue: _lrTipe,
+                    decoration: const InputDecoration(
+                      labelText: 'Sistem Kerja',
+                      isDense: true,
+                      contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                      border: OutlineInputBorder(),
+                    ),
+                    items: const [
+                      DropdownMenuItem(value: 'WFH', child: Text('WFH (Remote)', overflow: TextOverflow.ellipsis)),
+                      DropdownMenuItem(value: 'Hybrid', child: Text('Hybrid', overflow: TextOverflow.ellipsis)),
+                      DropdownMenuItem(value: 'WFO', child: Text('WFO (Onsite)', overflow: TextOverflow.ellipsis)),
+                    ],
+                    onChanged: (v) => setState(() => _lrTipe = v!),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                ElevatedButton.icon(
+                  onPressed: _lrLoading ? null : _runLinearRegression,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppTheme.primary,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                  ),
+                  icon: _lrLoading
+                      ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                      : const Icon(LucideIcons.calculator, size: 14),
+                  label: const Text('Hitung'),
+                ),
+              ],
+            ),
+          ],
           const SizedBox(height: 14),
 
           // Output Result Box
@@ -359,44 +438,72 @@ class _PesertaAICardState extends ConsumerState<PesertaAICard> with SingleTicker
                   children: [
                     _buildSliderRow('IPK Mahasiswa:', _logIpk.toStringAsFixed(2), _logIpk, 2.0, 4.0, (v) {
                       setState(() => _logIpk = double.parse(v.toStringAsFixed(2)));
-                    }),
+                    }, isMobile: isMobile),
                     _buildSliderRow('Skill yang Cocok:', '$_logSkills Skill', _logSkills.toDouble(), 0, 8, (v) {
                       setState(() => _logSkills = v.round());
-                    }),
+                    }, isMobile: isMobile),
                     _buildSliderRow('Skor Portofolio:', '${_logPortofolio.round()}%', _logPortofolio, 30, 100, (v) {
                       setState(() => _logPortofolio = v.roundToDouble());
-                    }),
+                    }, isMobile: isMobile),
                   ],
                 ),
               ),
             ],
           ),
-          Row(
-            children: [
-              Expanded(
-                child: CheckboxListTile(
-                  dense: true,
-                  contentPadding: EdgeInsets.zero,
-                  title: const Text('Jurusan Kuliah Linier dengan Posisi Magang', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
-                  value: _logJurusan,
-                  activeColor: AppTheme.primary,
-                  onChanged: (v) => setState(() => _logJurusan = v ?? true),
-                ),
-              ),
-              ElevatedButton.icon(
+          if (isMobile) ...[
+            CheckboxListTile(
+              dense: true,
+              contentPadding: EdgeInsets.zero,
+              title: const Text('Jurusan Kuliah Linier dengan Posisi Magang', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+              value: _logJurusan,
+              activeColor: AppTheme.primary,
+              onChanged: (v) => setState(() => _logJurusan = v ?? true),
+            ),
+            const SizedBox(height: 8),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
                 onPressed: _logLoading ? null : _runLogisticRegression,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppTheme.primary,
                   foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                 ),
                 icon: _logLoading
                     ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                    : const Icon(LucideIcons.scanLine, size: 14),
-                label: const Text('Cek Peluang'),
+                    : const Icon(LucideIcons.scanLine, size: 15),
+                label: const Text('Cek Peluang Kelolosan', style: TextStyle(fontWeight: FontWeight.w700)),
               ),
-            ],
-          ),
+            ),
+          ] else ...[
+            Row(
+              children: [
+                Expanded(
+                  child: CheckboxListTile(
+                    dense: true,
+                    contentPadding: EdgeInsets.zero,
+                    title: const Text('Jurusan Kuliah Linier dengan Posisi Magang', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+                    value: _logJurusan,
+                    activeColor: AppTheme.primary,
+                    onChanged: (v) => setState(() => _logJurusan = v ?? true),
+                  ),
+                ),
+                ElevatedButton.icon(
+                  onPressed: _logLoading ? null : _runLogisticRegression,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppTheme.primary,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  ),
+                  icon: _logLoading
+                      ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                      : const Icon(LucideIcons.scanLine, size: 14),
+                  label: const Text('Cek Peluang'),
+                ),
+              ],
+            ),
+          ],
           const SizedBox(height: 10),
 
           // Output Result Box
@@ -450,13 +557,13 @@ class _PesertaAICardState extends ConsumerState<PesertaAICard> with SingleTicker
     );
   }
 
-  Widget _buildSliderRow(String label, String valueStr, double value, double min, double max, ValueChanged<double> onChanged) {
+  Widget _buildSliderRow(String label, String valueStr, double value, double min, double max, ValueChanged<double> onChanged, {bool isMobile = false}) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 6),
       child: Row(
         children: [
           SizedBox(
-            width: 140,
+            width: isMobile ? 130 : 145,
             child: Text('$label $valueStr', style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600)),
           ),
           Expanded(

@@ -572,12 +572,13 @@ class _MLInsightsScreenState extends ConsumerState<MLInsightsScreen> with Single
                   children: [
                     Expanded(
                       child: DropdownButtonFormField<String>(
+                        isExpanded: true,
                         initialValue: _lrIndustri,
                         decoration: const InputDecoration(labelText: 'Industri Perusahaan', border: OutlineInputBorder()),
                         items: const [
-                          DropdownMenuItem(value: 'Pendidikan', child: Text('Pendidikan / Yayasan')),
-                          DropdownMenuItem(value: 'Manufaktur', child: Text('Manufaktur / Retail')),
-                          DropdownMenuItem(value: 'Teknologi', child: Text('Teknologi / Fintech')),
+                          DropdownMenuItem(value: 'Pendidikan', child: Text('Pendidikan / Yayasan', overflow: TextOverflow.ellipsis)),
+                          DropdownMenuItem(value: 'Manufaktur', child: Text('Manufaktur / Retail', overflow: TextOverflow.ellipsis)),
+                          DropdownMenuItem(value: 'Teknologi', child: Text('Teknologi / Fintech', overflow: TextOverflow.ellipsis)),
                         ],
                         onChanged: (v) => setState(() => _lrIndustri = v!),
                       ),
@@ -585,12 +586,13 @@ class _MLInsightsScreenState extends ConsumerState<MLInsightsScreen> with Single
                     const SizedBox(width: 14),
                     Expanded(
                       child: DropdownButtonFormField<String>(
+                        isExpanded: true,
                         initialValue: _lrTipe,
                         decoration: const InputDecoration(labelText: 'Sistem Kerja', border: OutlineInputBorder()),
                         items: const [
-                          DropdownMenuItem(value: 'WFH', child: Text('WFH (Remote)')),
-                          DropdownMenuItem(value: 'Hybrid', child: Text('Hybrid')),
-                          DropdownMenuItem(value: 'WFO', child: Text('WFO (Onsite)')),
+                          DropdownMenuItem(value: 'WFH', child: Text('WFH (Remote)', overflow: TextOverflow.ellipsis)),
+                          DropdownMenuItem(value: 'Hybrid', child: Text('Hybrid', overflow: TextOverflow.ellipsis)),
+                          DropdownMenuItem(value: 'WFO', child: Text('WFO (Onsite)', overflow: TextOverflow.ellipsis)),
                         ],
                         onChanged: (v) => setState(() => _lrTipe = v!),
                       ),

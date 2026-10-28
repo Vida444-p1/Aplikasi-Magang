@@ -207,8 +207,9 @@ class _VacancyFormScreenState extends ConsumerState<VacancyFormScreen> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text('Sistem Kerja*', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.text(context))),
-                                const SizedBox(height: 6),
+                                 const SizedBox(height: 6),
                                 DropdownButtonFormField<String>(
+                                  isExpanded: true,
                                   initialValue: _sistemKerja,
                                   decoration: InputDecoration(
                                     contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
@@ -224,9 +225,9 @@ class _VacancyFormScreenState extends ConsumerState<VacancyFormScreen> {
                                     ),
                                   ),
                                   items: const [
-                                    DropdownMenuItem(value: 'hybrid', child: Text('Hybrid (Campuran)')),
-                                    DropdownMenuItem(value: 'wfo', child: Text('WFO (Kerja dari Kantor)')),
-                                    DropdownMenuItem(value: 'wfh', child: Text('WFH (Kerja dari Rumah)')),
+                                    DropdownMenuItem(value: 'hybrid', child: Text('Hybrid (Campuran)', overflow: TextOverflow.ellipsis)),
+                                    DropdownMenuItem(value: 'wfo', child: Text('WFO (Kerja dari Kantor)', overflow: TextOverflow.ellipsis)),
+                                    DropdownMenuItem(value: 'wfh', child: Text('WFH (Kerja dari Rumah)', overflow: TextOverflow.ellipsis)),
                                   ],
                                   onChanged: (val) {
                                     if (val != null) setState(() => _sistemKerja = val);
