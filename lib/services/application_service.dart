@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../core/utils/supabase_config.dart';
 import '../models/application_model.dart';
+import '../models/profile_model.dart';
 import '../models/vacancy_model.dart';
 import 'notification_service.dart';
 import 'vacancy_service.dart';
@@ -23,13 +24,22 @@ class ApplicationService {
       catatanPerusahaan: 'Selamat! Hasil portofolio Flutter Anda sangat memuaskan.',
       namaPeserta: 'Vida Rizki Prasetyo',
       emailPeserta: 'vidar@student.uii.ac.id',
+      peserta: PesertaProfile(
+        id: 'pes-1',
+        userId: 'peserta-001',
+        nim: '21523001',
+        programStudi: 'Teknik Informatika',
+        universitas: 'Universitas Islam Indonesia',
+        keahlian: ['Flutter', 'Dart', 'Supabase', 'Git', 'REST API', 'Riverpod'],
+        cvUrl: 'https://storage.supabase.co/documents/cv-vidar.pdf',
+      ),
       vacancy: VacancyModel(
         id: 'vac-1',
         perusahaanId: 'per-1',
         posisi: 'Flutter & Mobile Developer Intern',
         bidang: 'Teknologi Informasi',
         deskripsi: 'Pengembangan aplikasi mobile Flutter terintegrasi Supabase.',
-        persyaratan: 'Dasar Dart, Flutter, Git',
+        persyaratan: '• Mahasiswa tingkat akhir jurusan Teknik Informatika/Sistem Informasi\n• Memahami dasar Dart & Flutter\n• Terbiasa dengan Git/GitHub',
         lokasi: 'Yogyakarta',
         sistemKerja: 'hybrid',
         durasiBulan: 6,
@@ -50,13 +60,22 @@ class ApplicationService {
       catatanPerusahaan: 'Berkas sedang direview oleh Head of Design.',
       namaPeserta: 'Vida Rizki Prasetyo',
       emailPeserta: 'vidar@student.uii.ac.id',
+      peserta: PesertaProfile(
+        id: 'pes-1',
+        userId: 'peserta-001',
+        nim: '21523001',
+        programStudi: 'Teknik Informatika',
+        universitas: 'Universitas Islam Indonesia',
+        keahlian: ['Flutter', 'Dart', 'Supabase', 'Git', 'REST API', 'Riverpod'],
+        cvUrl: 'https://storage.supabase.co/documents/cv-vidar.pdf',
+      ),
       vacancy: VacancyModel(
         id: 'vac-2',
         perusahaanId: 'per-2',
         posisi: 'UI/UX Designer Intern',
         bidang: 'Desain Grafis',
         deskripsi: 'Merancang wireframe & prototype produk.',
-        persyaratan: 'Figma, Portofolio',
+        persyaratan: '• Menguasai Figma dan prinsip dasar Design System\n• Memiliki portofolio UI/UX\n• Komunikatif dan kreatif',
         lokasi: 'Jakarta Selatan',
         sistemKerja: 'wfh',
         durasiBulan: 3,

@@ -3,7 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../core/theme/app_theme.dart';
+import '../../models/ai_match_result.dart';
 import '../../providers/application_provider.dart';
+import '../../providers/ai_matcher_provider.dart';
 import '../../widgets/responsive_scaffold.dart';
 import '../../widgets/status_badge.dart';
 import '../../widgets/custom_button.dart';
@@ -179,6 +181,10 @@ class _ApplicantDetailScreenState extends ConsumerState<ApplicantDetailScreen> {
                 ),
                 const SizedBox(height: 22),
 
+                // AI Match Score Card (Otomatis)
+                _buildAIScoreCard(context, ref, app?.lowonganId ?? 'vac-1'),
+                const SizedBox(height: 22),
+
                 // Decision Form Card
                 Container(
                   padding: const EdgeInsets.all(28),
@@ -255,6 +261,252 @@ class _ApplicantDetailScreenState extends ConsumerState<ApplicantDetailScreen> {
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildAIScoreCard(BuildContext context, WidgetRef ref, String lowonganId) {
+    final aiAsync = ref.watch(singleAIMatchProvider((applicantId: widget.applicantId, lowonganId: lowonganId)));
+
+    return aiAsync.when(
+      loading: () => Container(
+        padding: const EdgeInsets.all(28),
+        decoration: BoxDecoration(
+          color: AppTheme.surface(context),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: AppTheme.border(context)),
+          boxShadow: AppTheme.getCardShadow(context),
+        ),
+        child: Row(
+          children: [
+            const SizedBox(
+              width: 24,
+              height: 24,
+              child: CircularProgressIndicator(strokeWidth: 2.5, color: Color(0xFF10B981)),
+            ),
+            const SizedBox(width: 14),
+            Text('AI sedang mengevaluasi kandidat...', style: TextStyle(fontSize: 13, color: AppTheme.mutedText(context))),
+          ],
+        ),
+      ),
+      error: (_, __) => const SizedBox.shrink(),
+      data: (result) {
+        if (result == null) return const SizedBox.shrink();
+        return _buildAIScoreContent(context, result);
+      },
+    );
+  }
+
+  Widget _buildAIScoreContent(BuildContext context, AIMatchResult result) {
+    final tierColor = result.compositeLabel == 'Sangat Direkomendasikan'
+        ? const Color(0xFF10B981)
+        : (result.compositeLabel == 'Direkomendasikan'
+            ? const Color(0xFFF59E0B)
+            : const Color(0xFFEF4444));
+
+    return Container(
+      padding: const EdgeInsets.all(28),
+      decoration: BoxDecoration(
+        color: AppTheme.surface(context),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: tierColor.withValues(alpha: 0.35)),
+        boxShadow: AppTheme.getCardShadow(context),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: tierColor.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(LucideIcons.sparkles, size: 18, color: tierColor),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Text(
+                          'Evaluasi AI Otomatis',
+                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: AppTheme.text(context)),
+                        ),
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: tierColor.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Text(
+                            result.compositeLabel,
+                            style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: tierColor),
+                          ),
+                        ),
+                      ],
+                    ),
+                    Text(
+                      'Skor komposit dari SVM, Logistic Regression, dan Naive Bayes',
+                      style: TextStyle(fontSize: 12, color: AppTheme.mutedText(context)),
+                    ),
+                  ],
+                ),
+              ),
+              // Skor bulat besar
+              Container(
+                width: 56,
+                height: 56,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: tierColor.withValues(alpha: 0.12),
+                  border: Border.all(color: tierColor, width: 2.5),
+                ),
+                child: Center(
+                  child: Text(
+                    result.compositeScore.round().toString(),
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: tierColor),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 18),
+          Divider(color: AppTheme.borderSubtleColor(context), height: 1),
+          const SizedBox(height: 14),
+
+          // 3 Model scores side by side
+          Row(
+            children: [
+              Expanded(
+                child: _buildMiniModelScore(context,
+                  icon: LucideIcons.shieldCheck,
+                  label: 'SVM',
+                  value: result.svmTier,
+                  color: result.svmTier == 'Sangat Cocok'
+                      ? const Color(0xFF10B981)
+                      : (result.svmTier == 'Cukup Sesuai' ? const Color(0xFFF59E0B) : const Color(0xFFEF4444)),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: _buildMiniModelScore(context,
+                  icon: LucideIcons.checkCircle2,
+                  label: 'Logistic Reg.',
+                  value: '${result.acceptanceProbability.round()}%',
+                  color: result.isLikelyAccepted ? const Color(0xFF10B981) : const Color(0xFFF59E0B),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: _buildMiniModelScore(context,
+                  icon: LucideIcons.compass,
+                  label: 'Naive Bayes',
+                  value: result.predictedDomain,
+                  color: const Color(0xFF8B5CF6),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+
+          // Skill match bar
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: AppTheme.bgSubtle,
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Icon(LucideIcons.puzzle, size: 14, color: Color(0xFF10B981)),
+                    const SizedBox(width: 6),
+                    Text(
+                      'Kecocokan Skill: ${result.matchedSkillsCount}/${result.totalRequiredSkills} (${result.skillMatchPercentage.round()}%)',
+                      style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(4),
+                  child: LinearProgressIndicator(
+                    value: result.skillMatchPercentage / 100,
+                    backgroundColor: Colors.grey.withValues(alpha: 0.2),
+                    color: result.skillMatchPercentage >= 70
+                        ? const Color(0xFF10B981)
+                        : (result.skillMatchPercentage >= 40 ? const Color(0xFFF59E0B) : const Color(0xFFEF4444)),
+                    minHeight: 6,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 4,
+                  runSpacing: 4,
+                  children: [
+                    ...result.matchedSkills.map((s) => _buildSkillChip(s, true)),
+                    ...result.missingSkills.map((s) => _buildSkillChip(s, false)),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMiniModelScore(BuildContext context, {
+    required IconData icon,
+    required String label,
+    required String value,
+    required Color color,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: color.withValues(alpha: 0.2)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(icon, size: 12, color: color),
+              const SizedBox(width: 4),
+              Expanded(
+                child: Text(label, style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: AppTheme.mutedText(context)), overflow: TextOverflow.ellipsis),
+              ),
+            ],
+          ),
+          const SizedBox(height: 3),
+          Text(value, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w900, color: color), overflow: TextOverflow.ellipsis),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSkillChip(String skill, bool matched) {
+    final color = matched ? const Color(0xFF10B981) : const Color(0xFFEF4444);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: matched ? 0.12 : 0.08),
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: Text(
+        '${matched ? "✓" : "✗"} $skill',
+        style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: color),
       ),
     );
   }
